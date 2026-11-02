@@ -8,11 +8,11 @@
     android:background="@color/ps_background"
     tools:context=".PetProfileActivity">
 
-    <!-- PASTEL HEADER + PET PHOTO -->
+    <!-- PASTEL HEADER -->
     <FrameLayout
         android:id="@+id/frameHeader"
         android:layout_width="match_parent"
-        android:layout_height="@dimen/ps_header_height"
+        android:layout_height="200dp"
         android:background="@drawable/bg_header_gradient">
 
         <!-- Back button pill -->
@@ -43,549 +43,556 @@
             android:src="@drawable/ic_ps_more_vert"
             app:tint="@color/ps_text_primary" />
 
-        <!-- Pet image: white ring (outer) + circular crop (inner) -->
-        <ImageView
-            android:id="@+id/viewPetImageRing"
-            android:layout_width="@dimen/ps_pet_image_ring_size"
-            android:layout_height="@dimen/ps_pet_image_ring_size"
-            android:layout_gravity="bottom|center_horizontal"
-            android:layout_marginBottom="-4dp"
-            android:background="@drawable/ps_bg_circle"
-            android:contentDescription="@null"
-            android:elevation="6dp" />
-
-        <!-- Actual pet photo -->
-        <ImageView
-            android:id="@+id/imgPet"
-            android:layout_width="@dimen/ps_pet_image_size"
-            android:layout_height="@dimen/ps_pet_image_size"
-            android:layout_gravity="bottom|center_horizontal"
-            android:layout_marginBottom="0dp"
-            android:background="@drawable/ps_bg_circle"
-            android:clipToOutline="true"
-            android:contentDescription="@string/cd_pet_photo"
-            android:elevation="8dp"
-            android:scaleType="centerCrop"
-            android:src="@drawable/ic_pet_header_placeholder" />
-
-        <!-- Edit/Camera icon overlay -->
-        <ImageView
-            android:id="@+id/imgEditPhoto"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
-            android:layout_gravity="bottom|center_horizontal"
-            android:layout_marginBottom="4dp"
-            android:layout_marginStart="48dp"
-            android:background="@drawable/bg_pastel_circle"
-            android:padding="8dp"
-            android:src="@android:drawable/ic_menu_camera"
-            android:elevation="10dp"
-            android:contentDescription="Edit Photo"
-            app:tint="@color/ps_primary" />
-
     </FrameLayout>
 
-    <!-- SCROLLABLE PROFILE CARD -->
+    <!-- SCROLLABLE PROFILE CARD + OVERLAPPING PET PHOTO -->
     <androidx.core.widget.NestedScrollView
         android:id="@+id/nestedScrollView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_marginTop="220dp"
+        android:layout_marginTop="116dp"
         android:clipToPadding="false"
         android:fillViewport="false"
         android:paddingBottom="80dp">
 
-        <!-- Large rounded profile card -->
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/cardProfile"
-            style="@style/PS.Card"
+        <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginStart="@dimen/ps_profile_card_margin_horizontal"
-            android:layout_marginEnd="@dimen/ps_profile_card_margin_horizontal"
-            android:layout_marginBottom="@dimen/ps_spacing_lg">
+            android:clipChildren="false">
 
-            <LinearLayout
+            <!-- Large rounded profile card (starts at the photo ring's centre) -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardProfile"
+                style="@style/PS.Card"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:paddingStart="@dimen/ps_profile_card_inner_padding"
-                android:paddingEnd="@dimen/ps_profile_card_inner_padding"
-                android:paddingBottom="@dimen/ps_spacing_lg">
+                android:layout_marginStart="@dimen/ps_profile_card_margin_horizontal"
+                android:layout_marginTop="84dp"
+                android:layout_marginEnd="@dimen/ps_profile_card_margin_horizontal"
+                android:layout_marginBottom="@dimen/ps_spacing_lg">
 
-                <!-- Spacer for the overlapping pet photo -->
-                <Space
-                    android:layout_width="match_parent"
-                    android:layout_height="80dp" />
-
-                <!-- PET IDENTITY — Name + Breed -->
-                <TextView
-                    android:id="@+id/tvPetName"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center_horizontal"
-                    android:fontFamily="sans-serif-medium"
-                    android:gravity="center"
-                    android:text="@string/pet_name"
-                    android:textColor="@color/ps_text_primary"
-                    android:textSize="@dimen/ps_text_pet_name"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/tvBreed"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center_horizontal"
-                    android:layout_marginTop="4dp"
-                    android:fontFamily="sans-serif"
-                    android:gravity="center"
-                    android:text="@string/pet_breed"
-                    android:textColor="@color/ps_text_secondary"
-                    android:textSize="@dimen/ps_text_breed" />
-
-                <!-- STATS ROW — Gender | Age | Weight -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/ps_spacing_lg"
-                    android:baselineAligned="false"
-                    android:orientation="horizontal"
-                    android:weightSum="3">
+                    android:orientation="vertical"
+                    android:paddingStart="@dimen/ps_profile_card_inner_padding"
+                    android:paddingEnd="@dimen/ps_profile_card_inner_padding"
+                    android:paddingBottom="@dimen/ps_spacing_lg">
 
-                    <!-- Gender -->
-                    <com.google.android.material.card.MaterialCardView
-                        style="@style/PS.Card.Tile"
-                        android:layout_width="0dp"
+                    <!-- Spacer for the overlapping pet photo -->
+                    <Space
+                        android:layout_width="match_parent"
+                        android:layout_height="92dp" />
+
+                    <!-- PET IDENTITY — Name + Breed -->
+                    <TextView
+                        android:id="@+id/tvPetName"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:layout_marginEnd="6dp">
+                        android:layout_gravity="center_horizontal"
+                        android:fontFamily="sans-serif-medium"
+                        android:gravity="center"
+                        android:text="@string/pet_name"
+                        android:textColor="@color/ps_text_primary"
+                        android:textSize="@dimen/ps_text_pet_name"
+                        android:textStyle="bold" />
 
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:gravity="center"
-                            android:orientation="vertical"
-                            android:padding="@dimen/ps_spacing_md">
-
-                            <TextView
-                                android:id="@+id/tvGenderValue"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:fontFamily="sans-serif-medium"
-                                android:gravity="center"
-                                android:text="@string/pet_gender_value"
-                                android:textColor="@color/ps_text_primary"
-                                android:textSize="@dimen/ps_text_stat_value"
-                                android:textStyle="bold" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="2dp"
-                                android:fontFamily="sans-serif"
-                                android:gravity="center"
-                                android:text="@string/label_gender"
-                                android:textColor="@color/ps_text_hint"
-                                android:textSize="@dimen/ps_text_stat_label" />
-                        </LinearLayout>
-                    </com.google.android.material.card.MaterialCardView>
-
-                    <!-- Age -->
-                    <com.google.android.material.card.MaterialCardView
-                        style="@style/PS.Card.Tile"
-                        android:layout_width="0dp"
+                    <TextView
+                        android:id="@+id/tvBreed"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:layout_marginStart="6dp"
-                        android:layout_marginEnd="6dp">
+                        android:layout_gravity="center_horizontal"
+                        android:layout_marginTop="4dp"
+                        android:fontFamily="sans-serif"
+                        android:gravity="center"
+                        android:text="@string/pet_breed"
+                        android:textColor="@color/ps_text_secondary"
+                        android:textSize="@dimen/ps_text_breed" />
 
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:gravity="center"
-                            android:orientation="vertical"
-                            android:padding="@dimen/ps_spacing_md">
-
-                            <TextView
-                                android:id="@+id/tvAgeValue"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:fontFamily="sans-serif-medium"
-                                android:gravity="center"
-                                android:text="@string/pet_age_value"
-                                android:textColor="@color/ps_text_primary"
-                                android:textSize="@dimen/ps_text_stat_value"
-                                android:textStyle="bold" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="2dp"
-                                android:fontFamily="sans-serif"
-                                android:gravity="center"
-                                android:text="@string/label_age"
-                                android:textColor="@color/ps_text_hint"
-                                android:textSize="@dimen/ps_text_stat_label" />
-                        </LinearLayout>
-                    </com.google.android.material.card.MaterialCardView>
-
-                    <!-- Weight -->
-                    <com.google.android.material.card.MaterialCardView
-                        style="@style/PS.Card.Tile"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:layout_marginStart="6dp">
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:gravity="center"
-                            android:orientation="vertical"
-                            android:padding="@dimen/ps_spacing_md">
-
-                            <TextView
-                                android:id="@+id/tvWeightValue"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:fontFamily="sans-serif-medium"
-                                android:gravity="center"
-                                android:text="@string/pet_weight_value"
-                                android:textColor="@color/ps_text_primary"
-                                android:textSize="@dimen/ps_text_stat_value"
-                                android:textStyle="bold" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="2dp"
-                                android:fontFamily="sans-serif"
-                                android:gravity="center"
-                                android:text="@string/label_weight"
-                                android:textColor="@color/ps_text_hint"
-                                android:textSize="@dimen/ps_text_stat_label" />
-                        </LinearLayout>
-                    </com.google.android.material.card.MaterialCardView>
-
-                </LinearLayout>
-
-                <!-- DIVIDER -->
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="@dimen/ps_divider_height"
-                    android:layout_marginTop="@dimen/ps_spacing_lg"
-                    android:layout_marginBottom="@dimen/ps_spacing_md"
-                    android:background="@color/ps_divider" />
-
-                <!-- ABOUT BUDDY -->
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:fontFamily="sans-serif-medium"
-                    android:text="@string/about_title"
-                    android:textColor="@color/ps_text_primary"
-                    android:textSize="@dimen/ps_text_section_title"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/tvAboutText"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:ellipsize="end"
-                    android:fontFamily="sans-serif"
-                    android:lineSpacingMultiplier="1.5"
-                    android:maxLines="3"
-                    android:text="@string/about_text"
-                    android:textColor="@color/ps_text_secondary"
-                    android:textSize="@dimen/ps_text_body" />
-
-                <!-- Read more inline action -->
-                <TextView
-                    android:id="@+id/tvReadMore"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:fontFamily="sans-serif-medium"
-                    android:minHeight="44dp"
-                    android:paddingTop="10dp"
-                    android:paddingBottom="10dp"
-                    android:text="@string/read_more"
-                    android:textColor="@color/ps_primary"
-                    android:textSize="@dimen/ps_text_body"
-                    android:textStyle="bold" />
-
-                <!-- DIVIDER -->
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="@dimen/ps_divider_height"
-                    android:layout_marginTop="4dp"
-                    android:layout_marginBottom="@dimen/ps_spacing_md"
-                    android:background="@color/ps_divider" />
-
-                <!-- HEALTH SNAPSHOT SECTION TITLE -->
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:fontFamily="sans-serif-medium"
-                    android:text="@string/health_snapshot_title"
-                    android:textColor="@color/ps_text_primary"
-                    android:textSize="@dimen/ps_text_section_title"
-                    android:textStyle="bold" />
-
-                <!-- HEALTH SNAPSHOT GRID (2 × 2) -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/ps_spacing_md"
-                    android:orientation="vertical">
-
-                    <!-- Row 1 -->
+                    <!-- STATS ROW — Gender | Age | Weight -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/ps_spacing_lg"
                         android:baselineAligned="false"
                         android:orientation="horizontal"
-                        android:weightSum="2">
+                        android:weightSum="3">
 
-                        <!-- Health Score tile -->
+                        <!-- Gender -->
                         <com.google.android.material.card.MaterialCardView
                             style="@style/PS.Card.Tile"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:layout_marginEnd="6dp">
+                            android:layout_marginEnd="6dp"
+                            android:layout_weight="1">
 
                             <LinearLayout
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:orientation="horizontal"
-                                android:padding="@dimen/ps_stat_tile_padding"
-                                android:gravity="center_vertical">
+                                android:gravity="center"
+                                android:orientation="vertical"
+                                android:padding="@dimen/ps_spacing_md">
 
-                                <ImageView
-                                    android:layout_width="@dimen/ps_stat_icon_container_size"
-                                    android:layout_height="@dimen/ps_stat_icon_container_size"
-                                    android:background="@drawable/bg_pastel_circle"
-                                    android:contentDescription="@string/cd_health_score_icon"
-                                    android:padding="9dp"
-                                    android:src="@drawable/ic_ps_health" />
-
-                                <LinearLayout
-                                    android:layout_width="0dp"
+                                <TextView
+                                    android:id="@+id/tvGenderValue"
+                                    android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:layout_marginStart="10dp"
-                                    android:layout_weight="1"
-                                    android:orientation="vertical">
+                                    android:fontFamily="sans-serif-medium"
+                                    android:gravity="center"
+                                    android:text="@string/pet_gender_value"
+                                    android:textColor="@color/ps_text_primary"
+                                    android:textSize="@dimen/ps_text_stat_value"
+                                    android:textStyle="bold" />
 
-                                    <TextView
-                                        android:layout_width="wrap_content"
-                                        android:layout_height="wrap_content"
-                                        android:fontFamily="sans-serif-medium"
-                                        android:text="@string/stat_health_score_value"
-                                        android:textColor="@color/ps_text_primary"
-                                        android:textSize="@dimen/ps_text_stat_value"
-                                        android:textStyle="bold" />
-
-                                    <TextView
-                                        android:layout_width="wrap_content"
-                                        android:layout_height="wrap_content"
-                                        android:layout_marginTop="1dp"
-                                        android:fontFamily="sans-serif"
-                                        android:text="@string/stat_health_score_label"
-                                        android:textColor="@color/ps_text_hint"
-                                        android:textSize="@dimen/ps_text_stat_label" />
-                                </LinearLayout>
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="2dp"
+                                    android:fontFamily="sans-serif"
+                                    android:gravity="center"
+                                    android:text="@string/label_gender"
+                                    android:textColor="@color/ps_text_hint"
+                                    android:textSize="@dimen/ps_text_stat_label" />
                             </LinearLayout>
                         </com.google.android.material.card.MaterialCardView>
 
-                        <!-- Activity tile -->
+                        <!-- Age -->
                         <com.google.android.material.card.MaterialCardView
                             style="@style/PS.Card.Tile"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:layout_marginStart="6dp">
+                            android:layout_marginStart="6dp"
+                            android:layout_marginEnd="6dp"
+                            android:layout_weight="1">
 
                             <LinearLayout
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:orientation="horizontal"
-                                android:padding="@dimen/ps_stat_tile_padding"
-                                android:gravity="center_vertical">
+                                android:gravity="center"
+                                android:orientation="vertical"
+                                android:padding="@dimen/ps_spacing_md">
 
-                                <ImageView
-                                    android:layout_width="@dimen/ps_stat_icon_container_size"
-                                    android:layout_height="@dimen/ps_stat_icon_container_size"
-                                    android:background="@drawable/bg_pastel_circle"
-                                    android:contentDescription="@string/cd_activity_icon"
-                                    android:padding="9dp"
-                                    android:src="@drawable/ic_ps_activity" />
-
-                                <LinearLayout
-                                    android:layout_width="0dp"
+                                <TextView
+                                    android:id="@+id/tvAgeValue"
+                                    android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:layout_marginStart="10dp"
-                                    android:layout_weight="1"
-                                    android:orientation="vertical">
+                                    android:fontFamily="sans-serif-medium"
+                                    android:gravity="center"
+                                    android:text="@string/pet_age_value"
+                                    android:textColor="@color/ps_text_primary"
+                                    android:textSize="@dimen/ps_text_stat_value"
+                                    android:textStyle="bold" />
 
-                                    <TextView
-                                        android:layout_width="wrap_content"
-                                        android:layout_height="wrap_content"
-                                        android:fontFamily="sans-serif-medium"
-                                        android:text="@string/stat_activity_value"
-                                        android:textColor="@color/ps_text_primary"
-                                        android:textSize="@dimen/ps_text_stat_value"
-                                        android:textStyle="bold" />
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="2dp"
+                                    android:fontFamily="sans-serif"
+                                    android:gravity="center"
+                                    android:text="@string/label_age"
+                                    android:textColor="@color/ps_text_hint"
+                                    android:textSize="@dimen/ps_text_stat_label" />
+                            </LinearLayout>
+                        </com.google.android.material.card.MaterialCardView>
 
-                                    <TextView
-                                        android:layout_width="wrap_content"
-                                        android:layout_height="wrap_content"
-                                        android:layout_marginTop="1dp"
-                                        android:fontFamily="sans-serif"
-                                        android:text="@string/stat_activity_label"
-                                        android:textColor="@color/ps_text_hint"
-                                        android:textSize="@dimen/ps_text_stat_label" />
-                                </LinearLayout>
+                        <!-- Weight -->
+                        <com.google.android.material.card.MaterialCardView
+                            style="@style/PS.Card.Tile"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="6dp"
+                            android:layout_weight="1">
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:gravity="center"
+                                android:orientation="vertical"
+                                android:padding="@dimen/ps_spacing_md">
+
+                                <TextView
+                                    android:id="@+id/tvWeightValue"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:fontFamily="sans-serif-medium"
+                                    android:gravity="center"
+                                    android:text="@string/pet_weight_value"
+                                    android:textColor="@color/ps_text_primary"
+                                    android:textSize="@dimen/ps_text_stat_value"
+                                    android:textStyle="bold" />
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="2dp"
+                                    android:fontFamily="sans-serif"
+                                    android:gravity="center"
+                                    android:text="@string/label_weight"
+                                    android:textColor="@color/ps_text_hint"
+                                    android:textSize="@dimen/ps_text_stat_label" />
                             </LinearLayout>
                         </com.google.android.material.card.MaterialCardView>
 
                     </LinearLayout>
 
-                    <!-- Row 2 -->
+                    <!-- DIVIDER -->
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="@dimen/ps_divider_height"
+                        android:layout_marginTop="@dimen/ps_spacing_lg"
+                        android:layout_marginBottom="@dimen/ps_spacing_md"
+                        android:background="@color/ps_divider" />
+
+                    <!-- ABOUT BUDDY -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif-medium"
+                        android:text="@string/about_title"
+                        android:textColor="@color/ps_text_primary"
+                        android:textSize="@dimen/ps_text_section_title"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tvAboutText"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:ellipsize="end"
+                        android:fontFamily="sans-serif"
+                        android:lineSpacingMultiplier="1.5"
+                        android:maxLines="3"
+                        android:text="@string/about_text"
+                        android:textColor="@color/ps_text_secondary"
+                        android:textSize="@dimen/ps_text_body" />
+
+                    <!-- Read more inline action -->
+                    <TextView
+                        android:id="@+id/tvReadMore"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:fontFamily="sans-serif-medium"
+                        android:minHeight="44dp"
+                        android:paddingTop="10dp"
+                        android:paddingBottom="10dp"
+                        android:text="@string/read_more"
+                        android:textColor="@color/ps_primary"
+                        android:textSize="@dimen/ps_text_body"
+                        android:textStyle="bold" />
+
+                    <!-- DIVIDER -->
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="@dimen/ps_divider_height"
+                        android:layout_marginTop="4dp"
+                        android:layout_marginBottom="@dimen/ps_spacing_md"
+                        android:background="@color/ps_divider" />
+
+                    <!-- HEALTH SNAPSHOT SECTION TITLE -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif-medium"
+                        android:text="@string/health_snapshot_title"
+                        android:textColor="@color/ps_text_primary"
+                        android:textSize="@dimen/ps_text_section_title"
+                        android:textStyle="bold" />
+
+                    <!-- HEALTH SNAPSHOT GRID (2 × 2) -->
                     <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/ps_spacing_md"
+                        android:orientation="vertical">
+
+                        <!-- Row 1 -->
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:baselineAligned="false"
+                            android:orientation="horizontal"
+                            android:weightSum="2">
+
+                            <!-- Health Score tile -->
+                            <com.google.android.material.card.MaterialCardView
+                                style="@style/PS.Card.Tile"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_marginEnd="6dp"
+                                android:layout_weight="1">
+
+                                <LinearLayout
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:gravity="center_vertical"
+                                    android:orientation="horizontal"
+                                    android:padding="@dimen/ps_stat_tile_padding">
+
+                                    <ImageView
+                                        android:layout_width="@dimen/ps_stat_icon_container_size"
+                                        android:layout_height="@dimen/ps_stat_icon_container_size"
+                                        android:background="@drawable/bg_pastel_circle"
+                                        android:contentDescription="@string/cd_health_score_icon"
+                                        android:padding="9dp"
+                                        android:src="@drawable/ic_ps_health" />
+
+                                    <LinearLayout
+                                        android:layout_width="0dp"
+                                        android:layout_height="wrap_content"
+                                        android:layout_marginStart="10dp"
+                                        android:layout_weight="1"
+                                        android:orientation="vertical">
+
+                                        <TextView
+                                            android:layout_width="wrap_content"
+                                            android:layout_height="wrap_content"
+                                            android:fontFamily="sans-serif-medium"
+                                            android:text="@string/stat_health_score_value"
+                                            android:textColor="@color/ps_text_primary"
+                                            android:textSize="@dimen/ps_text_stat_value"
+                                            android:textStyle="bold" />
+
+                                        <TextView
+                                            android:layout_width="wrap_content"
+                                            android:layout_height="wrap_content"
+                                            android:layout_marginTop="1dp"
+                                            android:fontFamily="sans-serif"
+                                            android:text="@string/stat_health_score_label"
+                                            android:textColor="@color/ps_text_hint"
+                                            android:textSize="@dimen/ps_text_stat_label" />
+                                    </LinearLayout>
+                                </LinearLayout>
+                            </com.google.android.material.card.MaterialCardView>
+
+                            <!-- Activity tile -->
+                            <com.google.android.material.card.MaterialCardView
+                                style="@style/PS.Card.Tile"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="6dp"
+                                android:layout_weight="1">
+
+                                <LinearLayout
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:gravity="center_vertical"
+                                    android:orientation="horizontal"
+                                    android:padding="@dimen/ps_stat_tile_padding">
+
+                                    <ImageView
+                                        android:layout_width="@dimen/ps_stat_icon_container_size"
+                                        android:layout_height="@dimen/ps_stat_icon_container_size"
+                                        android:background="@drawable/bg_pastel_circle"
+                                        android:contentDescription="@string/cd_activity_icon"
+                                        android:padding="9dp"
+                                        android:src="@drawable/ic_ps_activity" />
+
+                                    <LinearLayout
+                                        android:layout_width="0dp"
+                                        android:layout_height="wrap_content"
+                                        android:layout_marginStart="10dp"
+                                        android:layout_weight="1"
+                                        android:orientation="vertical">
+
+                                        <TextView
+                                            android:layout_width="wrap_content"
+                                            android:layout_height="wrap_content"
+                                            android:fontFamily="sans-serif-medium"
+                                            android:text="@string/stat_activity_value"
+                                            android:textColor="@color/ps_text_primary"
+                                            android:textSize="@dimen/ps_text_stat_value"
+                                            android:textStyle="bold" />
+
+                                        <TextView
+                                            android:layout_width="wrap_content"
+                                            android:layout_height="wrap_content"
+                                            android:layout_marginTop="1dp"
+                                            android:fontFamily="sans-serif"
+                                            android:text="@string/stat_activity_label"
+                                            android:textColor="@color/ps_text_hint"
+                                            android:textSize="@dimen/ps_text_stat_label" />
+                                    </LinearLayout>
+                                </LinearLayout>
+                            </com.google.android.material.card.MaterialCardView>
+
+                        </LinearLayout>
+
+                        <!-- Row 2 -->
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/ps_spacing_sm"
+                            android:baselineAligned="false"
+                            android:orientation="horizontal"
+                            android:weightSum="2">
+
+                            <!-- Sleep tile -->
+                            <com.google.android.material.card.MaterialCardView
+                                style="@style/PS.Card.Tile"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_marginEnd="6dp"
+                                android:layout_weight="1">
+
+                                <LinearLayout
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:gravity="center_vertical"
+                                    android:orientation="horizontal"
+                                    android:padding="@dimen/ps_stat_tile_padding">
+
+                                    <ImageView
+                                        android:layout_width="@dimen/ps_stat_icon_container_size"
+                                        android:layout_height="@dimen/ps_stat_icon_container_size"
+                                        android:background="@drawable/bg_pastel_circle"
+                                        android:contentDescription="@string/cd_sleep_icon"
+                                        android:padding="9dp"
+                                        android:src="@drawable/ic_ps_sleep" />
+
+                                    <LinearLayout
+                                        android:layout_width="0dp"
+                                        android:layout_height="wrap_content"
+                                        android:layout_marginStart="10dp"
+                                        android:layout_weight="1"
+                                        android:orientation="vertical">
+
+                                        <TextView
+                                            android:layout_width="wrap_content"
+                                            android:layout_height="wrap_content"
+                                            android:fontFamily="sans-serif-medium"
+                                            android:text="@string/stat_sleep_value"
+                                            android:textColor="@color/ps_text_primary"
+                                            android:textSize="@dimen/ps_text_stat_value"
+                                            android:textStyle="bold" />
+
+                                        <TextView
+                                            android:layout_width="wrap_content"
+                                            android:layout_height="wrap_content"
+                                            android:layout_marginTop="1dp"
+                                            android:fontFamily="sans-serif"
+                                            android:text="@string/stat_sleep_label"
+                                            android:textColor="@color/ps_text_hint"
+                                            android:textSize="@dimen/ps_text_stat_label" />
+                                    </LinearLayout>
+                                </LinearLayout>
+                            </com.google.android.material.card.MaterialCardView>
+
+                            <!-- Last Weight tile -->
+                            <com.google.android.material.card.MaterialCardView
+                                style="@style/PS.Card.Tile"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="6dp"
+                                android:layout_weight="1">
+
+                                <LinearLayout
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:gravity="center_vertical"
+                                    android:orientation="horizontal"
+                                    android:padding="@dimen/ps_stat_tile_padding">
+
+                                    <ImageView
+                                        android:layout_width="@dimen/ps_stat_icon_container_size"
+                                        android:layout_height="@dimen/ps_stat_icon_container_size"
+                                        android:background="@drawable/bg_pastel_circle"
+                                        android:contentDescription="@string/cd_weight_icon"
+                                        android:padding="9dp"
+                                        android:src="@drawable/ic_ps_weight" />
+
+                                    <LinearLayout
+                                        android:layout_width="0dp"
+                                        android:layout_height="wrap_content"
+                                        android:layout_marginStart="10dp"
+                                        android:layout_weight="1"
+                                        android:orientation="vertical">
+
+                                        <TextView
+                                            android:layout_width="wrap_content"
+                                            android:layout_height="wrap_content"
+                                            android:fontFamily="sans-serif-medium"
+                                            android:text="@string/stat_last_weight_value"
+                                            android:textColor="@color/ps_text_primary"
+                                            android:textSize="@dimen/ps_text_stat_value"
+                                            android:textStyle="bold" />
+
+                                        <TextView
+                                            android:layout_width="wrap_content"
+                                            android:layout_height="wrap_content"
+                                            android:layout_marginTop="1dp"
+                                            android:fontFamily="sans-serif"
+                                            android:text="@string/stat_last_weight_label"
+                                            android:textColor="@color/ps_text_hint"
+                                            android:textSize="@dimen/ps_text_stat_label" />
+                                    </LinearLayout>
+                                </LinearLayout>
+                            </com.google.android.material.card.MaterialCardView>
+
+                        </LinearLayout>
+
+                    </LinearLayout>
+
+                    <!-- CTA BUTTONS -->
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnEditProfile"
+                        style="@style/Widget.MaterialComponents.Button"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/ps_spacing_lg"
+                        android:text="@string/btn_edit_profile" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnManageHealth"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="@dimen/ps_spacing_sm"
-                        android:baselineAligned="false"
-                        android:orientation="horizontal"
-                        android:weightSum="2">
-
-                        <!-- Sleep tile -->
-                        <com.google.android.material.card.MaterialCardView
-                            style="@style/PS.Card.Tile"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:layout_marginEnd="6dp">
-
-                            <LinearLayout
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:orientation="horizontal"
-                                android:padding="@dimen/ps_stat_tile_padding"
-                                android:gravity="center_vertical">
-
-                                <ImageView
-                                    android:layout_width="@dimen/ps_stat_icon_container_size"
-                                    android:layout_height="@dimen/ps_stat_icon_container_size"
-                                    android:background="@drawable/bg_pastel_circle"
-                                    android:contentDescription="@string/cd_sleep_icon"
-                                    android:padding="9dp"
-                                    android:src="@drawable/ic_ps_sleep" />
-
-                                <LinearLayout
-                                    android:layout_width="0dp"
-                                    android:layout_height="wrap_content"
-                                    android:layout_marginStart="10dp"
-                                    android:layout_weight="1"
-                                    android:orientation="vertical">
-
-                                    <TextView
-                                        android:layout_width="wrap_content"
-                                        android:layout_height="wrap_content"
-                                        android:fontFamily="sans-serif-medium"
-                                        android:text="@string/stat_sleep_value"
-                                        android:textColor="@color/ps_text_primary"
-                                        android:textSize="@dimen/ps_text_stat_value"
-                                        android:textStyle="bold" />
-
-                                    <TextView
-                                        android:layout_width="wrap_content"
-                                        android:layout_height="wrap_content"
-                                        android:layout_marginTop="1dp"
-                                        android:fontFamily="sans-serif"
-                                        android:text="@string/stat_sleep_label"
-                                        android:textColor="@color/ps_text_hint"
-                                        android:textSize="@dimen/ps_text_stat_label" />
-                                </LinearLayout>
-                            </LinearLayout>
-                        </com.google.android.material.card.MaterialCardView>
-
-                        <!-- Last Weight tile -->
-                        <com.google.android.material.card.MaterialCardView
-                            style="@style/PS.Card.Tile"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:layout_marginStart="6dp">
-
-                            <LinearLayout
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:orientation="horizontal"
-                                android:padding="@dimen/ps_stat_tile_padding"
-                                android:gravity="center_vertical">
-
-                                <ImageView
-                                    android:layout_width="@dimen/ps_stat_icon_container_size"
-                                    android:layout_height="@dimen/ps_stat_icon_container_size"
-                                    android:background="@drawable/bg_pastel_circle"
-                                    android:contentDescription="@string/cd_weight_icon"
-                                    android:padding="9dp"
-                                    android:src="@drawable/ic_ps_weight" />
-
-                                <LinearLayout
-                                    android:layout_width="0dp"
-                                    android:layout_height="wrap_content"
-                                    android:layout_marginStart="10dp"
-                                    android:layout_weight="1"
-                                    android:orientation="vertical">
-
-                                    <TextView
-                                        android:layout_width="wrap_content"
-                                        android:layout_height="wrap_content"
-                                        android:fontFamily="sans-serif-medium"
-                                        android:text="@string/stat_last_weight_value"
-                                        android:textColor="@color/ps_text_primary"
-                                        android:textSize="@dimen/ps_text_stat_value"
-                                        android:textStyle="bold" />
-
-                                    <TextView
-                                        android:layout_width="wrap_content"
-                                        android:layout_height="wrap_content"
-                                        android:layout_marginTop="1dp"
-                                        android:fontFamily="sans-serif"
-                                        android:text="@string/stat_last_weight_label"
-                                        android:textColor="@color/ps_text_hint"
-                                        android:textSize="@dimen/ps_text_stat_label" />
-                                </LinearLayout>
-                            </LinearLayout>
-                        </com.google.android.material.card.MaterialCardView>
-
-                    </LinearLayout>
+                        android:text="@string/btn_manage_health" />
 
                 </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
 
-                <!-- CTA BUTTONS -->
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnEditProfile"
-                    style="@style/Widget.MaterialComponents.Button"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/ps_spacing_lg"
-                    android:text="@string/btn_edit_profile" />
+            <!-- Pet image: white ring (outer) -->
+            <ImageView
+                android:id="@+id/viewPetImageRing"
+                android:layout_width="168dp"
+                android:layout_height="168dp"
+                android:layout_gravity="top|center_horizontal"
+                android:background="@drawable/ps_bg_circle"
+                android:contentDescription="@null"
+                android:elevation="6dp" />
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnManageHealth"
-                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/ps_spacing_sm"
-                    android:text="@string/btn_manage_health" />
+            <!-- Actual pet photo (circular crop) -->
+            <ImageView
+                android:id="@+id/imgPet"
+                android:layout_width="160dp"
+                android:layout_height="160dp"
+                android:layout_gravity="top|center_horizontal"
+                android:layout_marginTop="4dp"
+                android:background="@drawable/ps_bg_circle"
+                android:clipToOutline="true"
+                android:contentDescription="@string/cd_pet_photo"
+                android:elevation="8dp"
+                android:scaleType="centerCrop"
+                android:src="@drawable/ic_pet_header_placeholder" />
 
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
+            <!-- Edit/Camera icon overlay -->
+            <ImageView
+                android:id="@+id/imgEditPhoto"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:layout_gravity="top|center_horizontal"
+                android:layout_marginStart="112dp"
+                android:layout_marginTop="120dp"
+                android:background="@drawable/bg_pastel_circle"
+                android:contentDescription="Edit Photo"
+                android:elevation="10dp"
+                android:padding="8dp"
+                android:src="@android:drawable/ic_menu_camera"
+                app:tint="@color/ps_primary" />
+
+        </FrameLayout>
 
     </androidx.core.widget.NestedScrollView>
 

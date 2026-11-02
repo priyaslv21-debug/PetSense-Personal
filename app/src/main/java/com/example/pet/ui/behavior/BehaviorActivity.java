@@ -1,11 +1,16 @@
 package com.example.pet.ui.behavior;
 
+import androidx.recyclerview.widget.LinearLayoutManager;
+
 import android.Manifest;
+import android.app.ProgressDialog;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
+import android.graphics.ImageDecoder;
 import android.media.MediaMetadataRetriever;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.util.Log;
@@ -23,7 +28,6 @@ import androidx.camera.lifecycle.ProcessCameraProvider;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.lifecycle.ViewModelProvider;
-import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.example.pet.MainActivity;
 import com.example.pet.R;
@@ -37,12 +41,13 @@ public class BehaviorActivity extends AppCompatActivity {
     private BehaviorBinding binding;
     private BehaviorViewModel viewModel;
     private BehaviorHistoryAdapter adapter;
+    private ProgressDialog progressDialog;
 
     private static final int CAMERA_PERMISSION_CODE = 100;
     private boolean isCameraActive = false;
 
-    // Launcher for selecting a video from the gallery
-    private ActivityResultLauncher<Intent> videoPickerLauncher;
+    // Launcher for selecting either Image or Video from gallery
+    private ActivityResultLauncher<Intent> mediaPickerLauncher;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -50,31 +55,77 @@ public class BehaviorActivity extends AppCompatActivity {
         binding = BehaviorBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
+        // Initialize ViewModel
         viewModel = new ViewModelProvider(this).get(BehaviorViewModel.class);
 
-        setupVideoPicker();
+        // Initialize TFLite Classifier
+        viewModel.initClassifier(this);
+
+        // ProgressDialog
+        progressDialog = new ProgressDialog(this);
+        progressDialog.setMessage("Analyzing pet behavior and mood...");
+        progressDialog.setCancelable(false);
+
+        // Catch intent pet context data
+        Intent intent = getIntent();
+        if (intent != null && intent.hasExtra("PET_NAME")) {
+            String pId = intent.getStringExtra("PET_ID");
+            String pName = intent.getStringExtra("PET_NAME");
+            String pBreed = intent.getStringExtra("PET_BREED");
+            String pAge = intent.getStringExtra("PET_AGE");
+            viewModel.initPetData(pId, pName, pBreed, pAge);
+        }
+
+        setupMediaPicker();
         setupViews();
         setupBottomNavigation();
         observeViewModel();
 
-        // Load mock history for demonstration
         viewModel.loadInitialData();
     }
 
-    private void setupVideoPicker() {
-        videoPickerLauncher = registerForActivityResult(
+    private void setupMediaPicker() {
+        mediaPickerLauncher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
                 result -> {
                     if (result.getResultCode() == RESULT_OK && result.getData() != null) {
-                        Uri videoUri = result.getData().getData();
-                        extractFrameAndAnalyze(videoUri);
+                        Uri selectedUri = result.getData().getData();
+                        if (selectedUri != null) {
+                            processSelectedMedia(selectedUri);
+                        }
                     }
                 }
         );
     }
 
+    private void processSelectedMedia(Uri uri) {
+        String mimeType = getContentResolver().getType(uri);
+        if (mimeType != null && mimeType.startsWith("video")) {
+            extractFrameAndAnalyze(uri);
+        } else {
+            // It is an image photo from gallery
+            try {
+                Bitmap bitmap;
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                    bitmap = ImageDecoder.decodeBitmap(ImageDecoder.createSource(getContentResolver(), uri));
+                } else {
+                    bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), uri);
+                }
+
+                if (bitmap != null) {
+                    if (isCameraActive) resetCameraUI();
+                    // Convert to software bitmap if needed
+                    Bitmap copyBitmap = bitmap.copy(Bitmap.Config.ARGB_8888, true);
+                    viewModel.startRealAnalysis(copyBitmap);
+                }
+            } catch (Exception e) {
+                Log.e("MediaPicker", "Failed to decode image", e);
+                Toast.makeText(this, "Could not load selected photo", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
     private void setupViews() {
-        // Toolbar
         binding.btnBack.setOnClickListener(v -> finish());
         binding.btnMore.setOnClickListener(v ->
                 Toast.makeText(this, "More options", Toast.LENGTH_SHORT).show());
@@ -97,39 +148,35 @@ public class BehaviorActivity extends AppCompatActivity {
             }
         });
 
-        // VIDEO UPLOAD BUTTON LOGIC
+        // IMAGE AND VIDEO UPLOAD BUTTON LOGIC
+        binding.btnUploadVideo.setText("Upload Photo / Video");
         binding.btnUploadVideo.setOnClickListener(v -> {
-            Intent intent = new Intent(Intent.ACTION_PICK);
-            intent.setDataAndType(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, "video/*");
-            videoPickerLauncher.launch(intent);
+            Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+            intent.setType("*/*");
+            String[] mimeTypes = {"image/*", "video/*"};
+            intent.putExtra(Intent.EXTRA_MIME_TYPES, mimeTypes);
+            mediaPickerLauncher.launch(intent);
         });
 
-        // Reset Logic
         binding.btnResetAnalysis.setOnClickListener(v -> {
             viewModel.resetAnalysis();
             resetCameraUI();
         });
 
-        // RecyclerView
         adapter = new BehaviorHistoryAdapter();
         binding.rvRecentAnalyses.setLayoutManager(new LinearLayoutManager(this));
         binding.rvRecentAnalyses.setAdapter(adapter);
     }
 
-    // Extracts a single frame from the uploaded video to send to the AI
     private void extractFrameAndAnalyze(Uri videoUri) {
         try {
             MediaMetadataRetriever retriever = new MediaMetadataRetriever();
             retriever.setDataSource(this, videoUri);
-
-            // Extract frame at 1 second mark (1,000,000 microseconds) to avoid blank starting frames
             Bitmap frame = retriever.getFrameAtTime(1000000, MediaMetadataRetriever.OPTION_CLOSEST_SYNC);
             retriever.release();
 
             if (frame != null) {
-                if (isCameraActive) {
-                    resetCameraUI();
-                }
+                if (isCameraActive) resetCameraUI();
                 viewModel.startRealAnalysis(frame);
             } else {
                 Toast.makeText(this, "Could not extract frame from video", Toast.LENGTH_SHORT).show();
@@ -139,8 +186,6 @@ public class BehaviorActivity extends AppCompatActivity {
             Toast.makeText(this, "Error reading video file", Toast.LENGTH_SHORT).show();
         }
     }
-
-    // --- CAMERAX INTEGRATION ---
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
@@ -156,14 +201,11 @@ public class BehaviorActivity extends AppCompatActivity {
 
     private void startCamera() {
         ListenableFuture<ProcessCameraProvider> cameraProviderFuture = ProcessCameraProvider.getInstance(this);
-
         cameraProviderFuture.addListener(() -> {
             try {
                 ProcessCameraProvider cameraProvider = cameraProviderFuture.get();
-
                 Preview preview = new Preview.Builder().build();
                 preview.setSurfaceProvider(binding.viewFinder.getSurfaceProvider());
-
                 CameraSelector cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA;
 
                 cameraProvider.unbindAll();
@@ -173,7 +215,6 @@ public class BehaviorActivity extends AppCompatActivity {
                 binding.viewFinder.setVisibility(View.VISIBLE);
                 binding.btnStartCamera.setText("Capture & Analyze");
                 isCameraActive = true;
-
             } catch (Exception e) {
                 Log.e("CameraX", "Binding failed", e);
                 Toast.makeText(this, "Failed to start camera.", Toast.LENGTH_SHORT).show();
@@ -188,44 +229,28 @@ public class BehaviorActivity extends AppCompatActivity {
         binding.btnStartCamera.setText("Start Camera Analysis");
     }
 
-    // ---------------------------
-
     private void setupBottomNavigation() {
         binding.bottomNavigation.setSelectedItemId(R.id.nav_behavior);
         binding.bottomNavigation.setOnItemSelectedListener(item -> {
             int id = item.getItemId();
-            AppCompatActivity currentActivity = this;
-
             if (id == R.id.nav_home) {
-                if (currentActivity instanceof MainActivity) return true;
                 Intent intent = new Intent(this, MainActivity.class);
                 intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
                 startActivity(intent);
                 finish();
                 return true;
-
             } else if (id == R.id.nav_health) {
-                if (currentActivity instanceof HealthActivity) return true;
                 startActivity(new Intent(this, HealthActivity.class));
                 finish();
                 return true;
-
             } else if (id == R.id.nav_behavior) {
-                if (currentActivity instanceof BehaviorActivity) return true;
-                startActivity(new Intent(this, BehaviorActivity.class));
-                finish();
                 return true;
-
             } else if (id == R.id.nav_insights) {
-                if (currentActivity instanceof InsightsActivity) return true;
                 startActivity(new Intent(this, InsightsActivity.class));
                 finish();
                 return true;
-
-            } else {
-                Toast.makeText(this, "Feature coming soon", Toast.LENGTH_SHORT).show();
-                return false;
             }
+            return false;
         });
     }
 
@@ -239,7 +264,6 @@ public class BehaviorActivity extends AppCompatActivity {
 
         viewModel.getPetBreedAge().observe(this, binding.tvPetContextDetails::setText);
 
-        // Bind the new Result Data to the UI
         viewModel.getCurrentBehavior().observe(this, binding.tvResultBehavior::setText);
         viewModel.getCurrentEmoji().observe(this, binding.tvResultEmoji::setText);
         viewModel.getCurrentConfidence().observe(this, binding.tvResultConfidence::setText);
@@ -248,11 +272,19 @@ public class BehaviorActivity extends AppCompatActivity {
         viewModel.getEnergy().observe(this, binding.tvIndicatorEnergy::setText);
         viewModel.getAiInsight().observe(this, text -> {
             binding.tvAiInsight.setText(text);
-            binding.tvResultExplanation.setText(text); // Also put the insight in the green card
+            binding.tvResultExplanation.setText(text);
         });
         viewModel.getActionSuggestion().observe(this, binding.tvActionSuggestionDesc::setText);
 
         viewModel.getState().observe(this, state -> {
+            if (state == BehaviorViewModel.AnalysisState.ANALYZING) {
+                progressDialog.show();
+            } else {
+                if (progressDialog.isShowing()) {
+                    progressDialog.dismiss();
+                }
+            }
+
             binding.layoutInputState.setVisibility(state == BehaviorViewModel.AnalysisState.IDLE ? View.VISIBLE : View.GONE);
             binding.layoutProgressState.setVisibility(state == BehaviorViewModel.AnalysisState.ANALYZING ? View.VISIBLE : View.GONE);
             binding.layoutResultState.setVisibility(state == BehaviorViewModel.AnalysisState.RESULT ? View.VISIBLE : View.GONE);

@@ -8,6 +8,7 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QuerySnapshot;
 
 import java.util.ArrayList;
@@ -39,12 +40,30 @@ import java.util.List;
  */
 public class PetRepository {
 
-    private final FirebaseFirestore firestore;
-    private final FirebaseAuth auth;
+    private FirebaseFirestore firestore;
+    private FirebaseAuth auth;
 
     public PetRepository() {
-        firestore = FirebaseFirestore.getInstance();
-        auth = FirebaseAuth.getInstance();
+        try {
+            firestore = FirebaseFirestore.getInstance();
+            auth = FirebaseAuth.getInstance();
+        } catch (Exception e) {
+            // Log or hold null if GMS / Firebase initialization encounters issues
+        }
+    }
+
+    private FirebaseFirestore getFirestore() {
+        if (firestore == null) {
+            firestore = FirebaseFirestore.getInstance();
+        }
+        return firestore;
+    }
+
+    private FirebaseAuth getAuth() {
+        if (auth == null) {
+            auth = FirebaseAuth.getInstance();
+        }
+        return auth;
     }
 
     public interface PetsCallback {
@@ -59,54 +78,111 @@ public class PetRepository {
 
     private CollectionReference petsCollection() {
         String uid = currentUid();
-        return firestore.collection("users").document(uid).collection("pets");
+        return getFirestore().collection("users").document(uid).collection("pets");
     }
 
     private String currentUid() {
-        if (auth.getCurrentUser() == null) {
+        FirebaseAuth a = getAuth();
+        if (a == null || a.getCurrentUser() == null) {
             throw new IllegalStateException(
                     "PetRepository used with no signed-in user — call this after your existing login flow completes.");
         }
-        return auth.getCurrentUser().getUid();
+        return a.getCurrentUser().getUid();
     }
 
     public void loadPets(@NonNull PetsCallback callback) {
-        petsCollection().get()
-                .addOnSuccessListener(new OnSuccessListener<QuerySnapshot>() {
-                    @Override
-                    public void onSuccess(QuerySnapshot snapshot) {
-                        List<Pet> pets = new ArrayList<>();
-                        snapshot.forEach(doc -> {
-                            Pet pet = doc.toObject(Pet.class);
-                            pet.setId(doc.getId());
-                            pets.add(pet);
-                        });
-                        callback.onSuccess(pets);
-                    }
-                })
-                .addOnFailureListener(new OnFailureListener() {
-                    @Override
-                    public void onFailure(@NonNull Exception e) {
-                        callback.onError(e);
-                    }
-                });
+        try {
+            petsCollection().get()
+                    .addOnSuccessListener(new OnSuccessListener<QuerySnapshot>() {
+                        @Override
+                        public void onSuccess(QuerySnapshot snapshot) {
+                            List<Pet> pets = new ArrayList<>();
+                            snapshot.forEach(doc -> {
+                                Pet pet = doc.toObject(Pet.class);
+                                pet.setId(doc.getId());
+                                pets.add(pet);
+                            });
+                            callback.onSuccess(pets);
+                        }
+                    })
+                    .addOnFailureListener(new OnFailureListener() {
+                        @Override
+                        public void onFailure(@NonNull Exception e) {
+                            callback.onError(e);
+                        }
+                    });
+        } catch (Exception e) {
+            callback.onError(e);
+        }
     }
 
     public void addPet(@NonNull Pet pet, @NonNull SavePetCallback callback) {
-        DocumentReference ref = petsCollection().document(); // pre-generates an id
-        pet.setId(ref.getId());
-        ref.set(pet)
-                .addOnSuccessListener(unused -> callback.onSuccess(pet))
-                .addOnFailureListener(callback::onError);
+        try {
+            DocumentReference ref = petsCollection().document(); // pre-generates an id
+            pet.setId(ref.getId());
+            ref.set(pet)
+                    .addOnSuccessListener(unused -> callback.onSuccess(pet))
+                    .addOnFailureListener(callback::onError);
+        } catch (Exception e) {
+            callback.onError(e);
+        }
     }
 
     public void updatePet(@NonNull Pet pet, @NonNull SavePetCallback callback) {
-        if (pet.getId() == null) {
-            addPet(pet, callback);
-            return;
+        try {
+            if (pet.getId() == null) {
+                addPet(pet, callback);
+                return;
+            }
+            petsCollection().document(pet.getId()).set(pet)
+                    .addOnSuccessListener(unused -> callback.onSuccess(pet))
+                    .addOnFailureListener(callback::onError);
+        } catch (Exception e) {
+            callback.onError(e);
         }
-        petsCollection().document(pet.getId()).set(pet)
-                .addOnSuccessListener(unused -> callback.onSuccess(pet))
-                .addOnFailureListener(callback::onError);
+    }
+
+    public interface ActivityRecordsCallback {
+        void onSuccess(List<ActivityRecord> records);
+        void onError(Exception e);
+    }
+
+    public interface SaveActivityRecordCallback {
+        void onSuccess(ActivityRecord savedRecord);
+        void onError(Exception e);
+    }
+
+    private CollectionReference activityRecordsCollection(String petId) {
+        return petsCollection().document(petId).collection("activityRecords");
+    }
+
+    public void loadActivityRecords(@NonNull String petId, @NonNull ActivityRecordsCallback callback) {
+        try {
+            activityRecordsCollection(petId).orderBy("date", Query.Direction.DESCENDING).get()
+                    .addOnSuccessListener(snapshot -> {
+                        List<ActivityRecord> records = new ArrayList<>();
+                        snapshot.forEach(doc -> {
+                            ActivityRecord record = doc.toObject(ActivityRecord.class);
+                            record.setId(doc.getId());
+                            records.add(record);
+                        });
+                        callback.onSuccess(records);
+                    })
+                    .addOnFailureListener(callback::onError);
+        } catch (Exception e) {
+            callback.onError(e);
+        }
+    }
+
+    public void addActivityRecord(@NonNull String petId, @NonNull ActivityRecord record, @NonNull SaveActivityRecordCallback callback) {
+        try {
+            DocumentReference ref = activityRecordsCollection(petId).document();
+            record.setId(ref.getId());
+            ref.set(record)
+                    .addOnSuccessListener(unused -> callback.onSuccess(record))
+                    .addOnFailureListener(callback::onError);
+        } catch (Exception e) {
+            callback.onError(e);
+        }
     }
 }

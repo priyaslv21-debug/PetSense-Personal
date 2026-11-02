@@ -16,7 +16,8 @@ public class Pet {
     private String breed;       // optional
     private String age;         // free-text, e.g. "2 years" or "6 months" — kept simple on purpose
     private String notes;       // optional
-    private boolean isMale;     // used to pick the existing gender icon; default true
+    private boolean isMale;     // legacy boolean — kept for backward compat; prefer gender
+    private String gender;      // "Male" | "Female" | null (null = unknown / old Firestore doc)
     private String weight;      // e.g. "24 kg"
     private String photoUrl;    // local URI or remote URL for the pet's photo
 
@@ -31,6 +32,7 @@ public class Pet {
         this.age = age;
         this.notes = notes;
         this.isMale = isMale;
+        this.gender = isMale ? "Male" : "Female"; // derive initial value from legacy flag
         this.weight = weight;
         this.photoUrl = photoUrl;
     }
@@ -54,7 +56,18 @@ public class Pet {
     public void setNotes(String notes) { this.notes = notes; }
 
     public boolean isMale() { return isMale; }
-    public void setMale(boolean male) { isMale = male; }
+    public void setMale(boolean male) {
+        isMale = male;
+        // keep gender in sync when the legacy flag is flipped
+        if (gender == null) gender = male ? "Male" : "Female";
+    }
+
+    public String getGender() { return gender; }
+    public void setGender(String gender) {
+        this.gender = gender;
+        // keep legacy flag in sync
+        if (gender != null) isMale = !"Female".equalsIgnoreCase(gender);
+    }
 
     public String getWeight() { return weight; }
     public void setWeight(String weight) { this.weight = weight; }
@@ -62,12 +75,19 @@ public class Pet {
     public String getPhotoUrl() { return photoUrl; }
     public void setPhotoUrl(String photoUrl) { this.photoUrl = photoUrl; }
 
-    /** "Golden Retriever · 2 Years" style line for the pet summary card, or "Dog · 2 Years" if no breed. */
+    /**
+     * "Golden Retriever · Male · 2 Years" style line for summary cards.
+     * Any null/empty segment is skipped gracefully so old Firestore docs
+     * (which have no gender field) still render correctly.
+     */
     public String breedAgeLine() {
         String left = (breed != null && !breed.trim().isEmpty()) ? breed.trim() : species;
-        if (age == null || age.trim().isEmpty()) {
-            return left;
-        }
-        return left + " \u00b7 " + age.trim();
+        String g = (gender != null && !gender.trim().isEmpty()) ? gender.trim() : null;
+        String a = (age != null && !age.trim().isEmpty()) ? age.trim() : null;
+
+        StringBuilder sb = new StringBuilder(left != null ? left : "");
+        if (g != null) sb.append(" \u00b7 ").append(g);
+        if (a != null) sb.append(" \u00b7 ").append(a);
+        return sb.toString();
     }
 }

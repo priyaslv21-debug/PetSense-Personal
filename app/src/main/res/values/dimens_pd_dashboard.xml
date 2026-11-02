@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- NEW FILE. -->
+<resources>
+    <dimen name="pd_gauge_stroke_width">10dp</dimen>
+</resources>

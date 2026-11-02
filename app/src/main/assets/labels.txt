@@ -1,0 +1,4 @@
+0 Happy & Playful
+1 Relaxed & Calm
+2 Sad or Anxious
+3 Angry or Agitated

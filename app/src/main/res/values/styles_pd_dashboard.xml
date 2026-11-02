@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  NEW FILE. Dashboard-only text styles (PD.*). They set explicit colors, so the screen renders the same
+  in light and dark system themes and no other screen is affected.
+  To use a bundled font (e.g. res/font/plus_jakarta_sans.xml) change android:fontFamily in PD.Text only.
+-->
+<resources>
+    <style name="PD.Text" parent="">
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="android:includeFontPadding">false</item>
+        <item name="android:textColor">@color/pd_text_primary</item>
+    </style>
+
+    <style name="PD.Text.Greeting">
+        <item name="android:textSize">13sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/pd_text_muted</item>
+    </style>
+
+    <style name="PD.Text.Headline">
+        <item name="android:textSize">24sp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="PD.Text.PetName">
+        <item name="android:textSize">20sp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="PD.Text.PetMeta">
+        <item name="android:textSize">13sp</item>
+        <item name="android:textColor">@color/pd_text_muted</item>
+    </style>
+
+    <style name="PD.Text.Section">
+        <item name="android:textSize">17sp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="PD.Text.Updated">
+        <item name="android:textSize">12sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/pd_primary</item>
+    </style>
+
+    <style name="PD.Text.Label">
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:textColor">@color/pd_text_muted</item>
+    </style>
+
+    <style name="PD.Text.Value">
+        <item name="android:textSize">24sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:fontFeatureSettings">tnum</item>
+    </style>
+
+    <style name="PD.Text.Sub">
+        <item name="android:textSize">13sp</item>
+        <item name="android:textColor">@color/pd_text_secondary</item>
+    </style>
+
+    <style name="PD.Text.Caption">
+        <item name="android:textSize">11sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/pd_text_secondary</item>
+    </style>
+
+    <style name="PD.Text.Pill">
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:textSize">12sp</item>
+        <item name="android:paddingStart">12dp</item>
+        <item name="android:paddingEnd">12dp</item>
+        <item name="android:paddingTop">4dp</item>
+        <item name="android:paddingBottom">4dp</item>
+    </style>
+
+    <style name="PD.BottomNav.ActiveIndicator" parent="Widget.Material3.BottomNavigationView.ActiveIndicator">
+        <item name="android:color">@color/pd_primary</item>
+        <item name="android:width">56dp</item>
+        <item name="android:height">32dp</item>
+    </style>
+</resources>

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- NEW FILE. Selected icon is white (sits on the purple active-indicator pill). -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:color="@color/pd_surface" android:state_checked="true" />
+    <item android:color="@color/pd_nav_unselected" />
+</selector>

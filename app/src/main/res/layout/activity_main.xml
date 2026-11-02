@@ -1,21 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+    activity_main.xml — Dashboard screen (matches the Stitch reference).
+    All existing @+id values are preserved except viewPresenceDot (online dot removed on request).
+    New ids: tvWaterGoal.
+    chip*Status views are now TextViews (pill background/colors are applied by StatusPill in Java).
+-->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/rootLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/ps_background"
+    android:background="@color/pd_background"
     android:fitsSystemWindows="true"
     android:orientation="vertical"
     tools:ignore="ContentDescription,HardcodedText">
 
+    <!-- ===================== SCROLLABLE CONTENT ===================== -->
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1">
 
-        <!-- ===================== HOME / DASHBOARD ===================== -->
         <androidx.core.widget.NestedScrollView
             android:id="@+id/dashboardScroll"
             android:layout_width="match_parent"
@@ -28,201 +34,90 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:paddingStart="@dimen/ps_screen_padding"
-                android:paddingTop="16dp"
-                android:paddingEnd="@dimen/ps_screen_padding"
-                android:paddingBottom="28dp">
+                android:paddingStart="16dp"
+                android:paddingTop="12dp"
+                android:paddingEnd="16dp"
+                android:paddingBottom="24dp">
 
-                <!-- 1. TOP HEADER: menu · notification · avatar, then greeting + pet illustration -->
-                <LinearLayout
+                <!-- HEADER -->
+                <TextView
+                    android:id="@+id/tvGreeting"
+                    style="@style/PD.Text.Greeting"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    tools:text="Welcome back, Sarah! 👋" />
+
+                <TextView
+                    android:id="@+id/tvGreetingSubtitle"
+                    style="@style/PD.Text.Headline"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
+                    android:layout_marginTop="6dp"
+                    tools:text="How is Max doing today?" />
 
-                    <ImageButton
-                        android:id="@+id/btnMenu"
-                        android:layout_width="44dp"
-                        android:layout_height="44dp"
-                        android:background="@drawable/bg_pastel_circle"
-                        android:backgroundTint="@color/ps_pastel_lavender"
-                        android:contentDescription="@string/ps_cd_menu"
-                        android:padding="11dp"
-                        android:src="@drawable/ic_ps_menu"
-                        app:tint="@color/ps_pastel_lavender_on"
-                        tools:ignore="TouchTargetSizeCheck" />
-
-                    <View
-                        android:layout_width="0dp"
-                        android:layout_height="1dp"
-                        android:layout_weight="1" />
-
-                </LinearLayout>
-
+                <!-- PET IDENTITY ROW -->
                 <androidx.constraintlayout.widget.ConstraintLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="18dp">
+                    android:layout_marginTop="16dp">
 
-                    <TextView
-                        android:id="@+id/tvGreeting"
-                        style="@style/PS.Text.Body"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:fontFamily="sans-serif"
-                        app:layout_constraintEnd_toStartOf="@id/ivHeaderPetIllustration"
+                    <!-- Kept for existing wiring; the reference shows no menu icon, so it is hidden. -->
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnMenu"
+                        style="@style/Widget.Material3.Button.IconButton"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:contentDescription="@string/ps_cd_menu"
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp"
+                        android:visibility="gone"
+                        app:icon="@drawable/pd_ic_menu"
+                        app:iconTint="@color/pd_text_primary"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintTop_toTopOf="parent" />
+
+                    <com.google.android.material.imageview.ShapeableImageView
+                        android:id="@+id/ivPetSelectorAvatar"
+                        android:layout_width="56dp"
+                        android:layout_height="56dp"
+                        android:background="@color/pd_lavender"
+                        android:contentDescription="@string/ps_cd_pet_card_photo"
+                        android:padding="3dp"
+                        android:scaleType="centerCrop"
+                        android:src="@drawable/pd_avatar_placeholder"
+                        app:layout_constraintBottom_toBottomOf="parent"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toTopOf="parent"
-                        tools:text="Welcome back, Sarah! 👋" />
+                        app:shapeAppearanceOverlay="@style/PS.ShapeAppearance.Circle"
+                        app:strokeColor="@color/pd_primary"
+                        app:strokeWidth="2dp" />
 
-                    <TextView
-                        android:id="@+id/tvGreetingSubtitle"
-                        style="@style/PS.Text.Display"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:fontFamily="sans-serif-black"
-                        app:layout_constraintEnd_toStartOf="@id/ivHeaderPetIllustration"
-                        app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toBottomOf="@id/tvGreeting"
-                        tools:text="How is Max doing today?" />
-
-                    <!-- Swap this src for a real transparent pet PNG/WebP — see the note below the code. -->
-                    <ImageView
-                        android:id="@+id/ivHeaderPetIllustration"
-                        android:layout_width="@dimen/ps_header_pet_illustration"
-                        android:layout_height="@dimen/ps_header_pet_illustration"
-                        android:contentDescription="@string/ps_cd_pet_illustration"
-                        android:scaleType="centerInside"
-                        android:src="@drawable/ic_pet_header_placeholder"
-                        app:layout_constraintBottom_toBottomOf="@id/tvGreetingSubtitle"
-                        app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintTop_toTopOf="@id/tvGreeting" />
-                </androidx.constraintlayout.widget.ConstraintLayout>
-
-                <!-- ===== NEW: COMPACT PET SELECTOR (multi-pet switching) =====
-                     Purely additive: does not replace cardSelectedPet below, which still
-                     opens the full Pet Profile exactly as before. This row's only job is
-                     switching which pet is "active" on the dashboard. -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
-
+                    <!-- Pet name + dropdown caret (opens the pet selector sheet) -->
                     <com.google.android.material.card.MaterialCardView
                         android:id="@+id/cardPetSelector"
-                        style="@style/PS.Card.Clickable"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        app:cardCornerRadius="@dimen/ps_pet_selector_radius">
+                        android:layout_marginStart="10dp"
+                        android:layout_marginEnd="8dp"
+                        android:clickable="true"
+                        android:contentDescription="@string/pd_cd_pet_selector"
+                        android:focusable="true"
+                        app:cardBackgroundColor="@android:color/transparent"
+                        app:cardCornerRadius="12dp"
+                        app:cardElevation="0dp"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintEnd_toStartOf="@id/btnAddPet"
+                        app:layout_constraintStart_toEndOf="@id/ivPetSelectorAvatar"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:strokeWidth="0dp">
 
                         <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:gravity="center_vertical"
-                            android:minHeight="@dimen/ps_pet_touch_target"
-                            android:orientation="horizontal"
-                            android:paddingHorizontal="10dp"
-                            android:paddingVertical="8dp">
-
-                            <com.google.android.material.imageview.ShapeableImageView
-                                android:id="@+id/ivPetSelectorAvatar"
-                                android:layout_width="@dimen/ps_pet_selector_avatar"
-                                android:layout_height="@dimen/ps_pet_selector_avatar"
-                                android:background="@color/ps_primary_soft"
-                                android:contentDescription="@string/ps_cd_pet_card_photo"
-                                android:padding="4dp"
-                                android:scaleType="centerCrop"
-                                android:src="@drawable/ic_ps_paw"
-                                app:shapeAppearanceOverlay="@style/PS.ShapeAppearance.Circle" />
-
-                            <LinearLayout
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_marginStart="10dp"
-                                android:layout_weight="1"
-                                android:orientation="vertical">
-
-                                <TextView
-                                    android:id="@+id/tvPetSelectorName"
-                                    style="@style/PS.Text.Label"
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:fontFamily="sans-serif-medium"
-                                    android:maxLines="1"
-                                    android:ellipsize="end"
-                                    android:text="Max" />
-
-                                <TextView
-                                    android:id="@+id/tvPetSelectorMeta"
-                                    style="@style/PS.Text.Caption"
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:maxLines="1"
-                                    android:ellipsize="end"
-                                    android:text="Dog · 2 Years" />
-                            </LinearLayout>
-
-                            <ImageView
-                                android:layout_width="18dp"
-                                android:layout_height="18dp"
-                                android:layout_marginStart="6dp"
-                                android:src="@drawable/ic_ps_dropdown"
-                                app:tint="@color/ps_text_secondary" />
-                        </LinearLayout>
-                    </com.google.android.material.card.MaterialCardView>
-
-                    <ImageButton
-                        android:id="@+id/btnAddPet"
-                        android:layout_width="@dimen/ps_pet_touch_target"
-                        android:layout_height="@dimen/ps_pet_touch_target"
-                        android:layout_marginStart="10dp"
-                        android:background="@drawable/bg_pastel_circle"
-                        android:backgroundTint="@color/ps_pastel_green"
-                        android:contentDescription="@string/ps_cd_add_pet"
-                        android:padding="12dp"
-                        android:src="@drawable/ic_ps_add"
-                        app:tint="@color/ps_pastel_green_on" />
-                </LinearLayout>
-
-                <!-- 2. PET SUMMARY CARD: whole card is tappable -> Pet Profile -->
-                <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/cardSelectedPet"
-                    style="@style/PS.Card.Clickable"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="18dp"
-                    app:cardBackgroundColor="@color/ps_primary_soft"
-                    app:cardCornerRadius="@dimen/ps_card_radius_xl"
-                    app:cardElevation="0dp">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal"
-                        android:padding="16dp">
-
-                        <com.google.android.material.imageview.ShapeableImageView
-                            android:id="@+id/ivPetAvatar"
-                            android:layout_width="@dimen/ps_pet_card_avatar"
-                            android:layout_height="@dimen/ps_pet_card_avatar"
-                            android:background="@color/ps_surface"
-                            android:contentDescription="@string/ps_cd_pet_card_photo"
-                            android:padding="4dp"
-                            android:scaleType="centerCrop"
-                            android:src="@drawable/ic_ps_paw"
-                            app:shapeAppearanceOverlay="@style/PS.ShapeAppearance.Circle" />
-
-                        <LinearLayout
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="14dp"
-                            android:layout_weight="1"
-                            android:orientation="vertical">
+                            android:orientation="vertical"
+                            android:paddingHorizontal="4dp"
+                            android:paddingVertical="4dp">
 
                             <LinearLayout
                                 android:layout_width="wrap_content"
@@ -231,513 +126,798 @@
                                 android:orientation="horizontal">
 
                                 <TextView
-                                    android:id="@+id/tvPetName"
-                                    style="@style/PS.Text.Title"
+                                    android:id="@+id/tvPetSelectorName"
+                                    style="@style/PD.Text.PetName"
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:fontFamily="sans-serif-medium"
-                                    android:text="Max" />
+                                    android:ellipsize="end"
+                                    android:maxLines="1"
+                                    tools:text="Max" />
 
                                 <ImageView
-                                    android:id="@+id/ivPetGenderIcon"
-                                    android:layout_width="18dp"
-                                    android:layout_height="18dp"
-                                    android:layout_marginStart="4dp"
-                                    android:contentDescription="Male"
-                                    android:src="@drawable/ic_ps_gender_male"
-                                    app:tint="@color/ps_pastel_blue_on" />
+                                    android:layout_width="20dp"
+                                    android:layout_height="20dp"
+                                    android:layout_marginStart="2dp"
+                                    android:src="@drawable/pd_ic_dropdown"
+                                    app:tint="@color/pd_primary" />
                             </LinearLayout>
 
                             <TextView
-                                android:id="@+id/tvPetBreedAge"
-                                style="@style/PS.Text.Caption"
+                                android:id="@+id/tvPetSelectorMeta"
+                                style="@style/PD.Text.PetMeta"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="3dp"
-                                android:letterSpacing="0.01"
-                                android:text="Golden Retriever · 2 Years" />
+                                android:ellipsize="end"
+                                android:maxLines="1"
+                                tools:text="Golden Retriever · 2 Years" />
                         </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
 
-                        <ImageView
-                            android:id="@+id/ivPetCardChevron"
-                            android:layout_width="20dp"
-                            android:layout_height="20dp"
-                            android:src="@drawable/ic_ps_chevron"
-                            app:tint="@color/ps_text_secondary" />
-                    </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnAddPet"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="40dp"
+                        android:contentDescription="@string/pd_cd_add_pet"
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp"
+                        android:minWidth="0dp"
+                        android:paddingHorizontal="16dp"
+                        android:text="@string/pd_add_pet"
+                        android:textColor="@color/pd_primary"
+                        android:textSize="14sp"
+                        app:backgroundTint="@color/pd_lavender"
+                        app:cornerRadius="20dp"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:strokeColor="@color/pd_lavender_stroke"
+                        app:strokeWidth="1dp" />
+                </androidx.constraintlayout.widget.ConstraintLayout>
 
-                <!-- 3. QUICK ACTIONS: only features that exist elsewhere in the app -->
-                <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/cardQuickActions"
-                    style="@style/PS.Card"
+                <!-- "Today at a Glance" + last updated -->
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="14dp"
-                    app:cardCornerRadius="@dimen/ps_card_radius_lg">
+                    android:layout_marginTop="24dp"
+                    android:layout_marginBottom="12dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
 
-                    <LinearLayout
-                        android:layout_width="match_parent"
+                    <TextView
+                        style="@style/PD.Text.Section"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:paddingHorizontal="6dp"
-                        android:paddingVertical="16dp">
+                        android:layout_weight="1"
+                        android:text="@string/ps_section_glance" />
 
-                        <LinearLayout
-                            android:id="@+id/actionHealthCheck"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:background="?attr/selectableItemBackground"
-                            android:gravity="center"
-                            android:orientation="vertical">
+                    <TextView
+                        android:id="@+id/tvLastUpdated"
+                        style="@style/PD.Text.Updated"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:drawableStart="@drawable/pd_dot"
+                        android:drawablePadding="6dp"
+                        android:visibility="gone"
+                        tools:text="Updated 5m ago"
+                        tools:visibility="visible" />
+                </LinearLayout>
 
-                            <ImageView
-                                android:layout_width="@dimen/ps_quick_action_circle"
-                                android:layout_height="@dimen/ps_quick_action_circle"
-                                android:background="@drawable/bg_pastel_circle"
-                                android:backgroundTint="@color/ps_pastel_green"
-                                android:padding="14dp"
-                                android:src="@drawable/ic_ps_health"
-                                app:tint="@color/ps_pastel_green_on" />
-
-                            <TextView
-                                style="@style/PS.Text.Caption"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="8dp"
-                                android:gravity="center"
-                                android:text="@string/ps_action_health_check" />
-                        </LinearLayout>
-
-                        <LinearLayout
-                            android:id="@+id/actionBehaviorAnalysis"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:background="?attr/selectableItemBackground"
-                            android:gravity="center"
-                            android:orientation="vertical">
-
-                            <ImageView
-                                android:layout_width="@dimen/ps_quick_action_circle"
-                                android:layout_height="@dimen/ps_quick_action_circle"
-                                android:background="@drawable/bg_pastel_circle"
-                                android:backgroundTint="@color/ps_pastel_pink"
-                                android:padding="14dp"
-                                android:src="@drawable/ic_ps_behavior"
-                                app:tint="@color/ps_pastel_pink_on" />
-
-                            <TextView
-                                style="@style/PS.Text.Caption"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="8dp"
-                                android:gravity="center"
-                                android:text="@string/ps_action_behavior" />
-                        </LinearLayout>
-
-                        <LinearLayout
-                            android:id="@+id/actionActivity"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:background="?attr/selectableItemBackground"
-                            android:gravity="center"
-                            android:orientation="vertical">
-
-                            <ImageView
-                                android:layout_width="@dimen/ps_quick_action_circle"
-                                android:layout_height="@dimen/ps_quick_action_circle"
-                                android:background="@drawable/bg_pastel_circle"
-                                android:backgroundTint="@color/ps_pastel_peach"
-                                android:padding="14dp"
-                                android:src="@drawable/ic_ps_activity"
-                                app:tint="@color/ps_pastel_peach_on" />
-
-                            <TextView
-                                style="@style/PS.Text.Caption"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="8dp"
-                                android:gravity="center"
-                                android:text="@string/ps_action_activity" />
-                        </LinearLayout>
-
-                        <LinearLayout
-                            android:id="@+id/actionCareHistory"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:background="?attr/selectableItemBackground"
-                            android:gravity="center"
-                            android:orientation="vertical">
-
-                            <ImageView
-                                android:layout_width="@dimen/ps_quick_action_circle"
-                                android:layout_height="@dimen/ps_quick_action_circle"
-                                android:background="@drawable/bg_pastel_circle"
-                                android:backgroundTint="@color/ps_pastel_blue"
-                                android:padding="14dp"
-                                android:src="@drawable/ic_ps_care_history"
-                                app:tint="@color/ps_pastel_blue_on" />
-
-                            <TextView
-                                style="@style/PS.Text.Caption"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="8dp"
-                                android:gravity="center"
-                                android:text="@string/ps_action_care_history" />
-                        </LinearLayout>
-
-                        <LinearLayout
-                            android:id="@+id/actionProfileHelp"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:background="?attr/selectableItemBackground"
-                            android:gravity="center"
-                            android:orientation="vertical">
-
-                            <ImageView
-                                android:layout_width="@dimen/ps_quick_action_circle"
-                                android:layout_height="@dimen/ps_quick_action_circle"
-                                android:background="@drawable/bg_pastel_circle"
-                                android:backgroundTint="@color/ps_pastel_lavender"
-                                android:padding="14dp"
-                                android:src="@drawable/ic_ps_help"
-                                app:tint="@color/ps_pastel_lavender_on" />
-
-                            <TextView
-                                style="@style/PS.Text.Caption"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="8dp"
-                                android:gravity="center"
-                                android:text="@string/ps_action_profile_help" />
-                        </LinearLayout>
-                    </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
-
-                <!-- 4. TODAY AT A GLANCE -->
-                <TextView
-                    style="@style/PS.Text.Section"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/ps_section_gap"
-                    android:layout_marginBottom="10dp"
-                    android:fontFamily="sans-serif-medium"
-                    android:letterSpacing="0.02"
-                    android:text="@string/ps_section_glance" />
-
-                <!-- 5. HEALTH SCORE METER — dominant card, real custom View, not an image -->
-                <!-- 5. HEALTH SCORE METER — FrameLayout allows text to float on top of the meter -->
-                <!-- 5. ENHANCED HEALTH SCORE METER -->
+                <!-- INSIGHT CARD (gradient) -->
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/cardHealthScore"
-                    style="@style/PS.Card"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    app:cardCornerRadius="@dimen/ps_card_radius_lg">
+                    app:cardBackgroundColor="@color/pd_gradient_start"
+                    app:cardCornerRadius="24dp"
+                    app:cardElevation="0dp"
+                    app:strokeWidth="0dp">
 
-                    <FrameLayout
+                    <androidx.constraintlayout.widget.ConstraintLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:padding="24dp">
+                        android:background="@drawable/pd_bg_insight_card"
+                        android:padding="16dp">
 
-                        <!-- The Custom Gauge -->
-                        <com.example.pet.ui.dashboard.HealthScoreView
-                            android:id="@+id/healthScoreView"
-                            android:layout_width="match_parent"
-                            android:layout_height="@dimen/ps_gauge_height"
-                            android:contentDescription="@string/ps_cd_health_score"
-                            app:gaugeStrokeWidth="@dimen/ps_gauge_stroke_width"
-                            app:maxScore="100"
-                            app:score="86" />
-
-                        <!-- Enhanced text overlays -->
-                        <LinearLayout
+                        <TextView
+                            android:id="@+id/tvInsightEyebrow"
+                            style="@style/PD.Text"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_gravity="center"
-                            android:gravity="center"
-                            android:orientation="vertical"
-                            android:layout_marginTop="12dp">
+                            android:letterSpacing="0.08"
+                            android:text="@string/pd_overview"
+                            android:textAllCaps="true"
+                            android:textColor="@color/pd_on_gradient_muted"
+                            android:textSize="12sp"
+                            android:textStyle="bold"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toTopOf="parent" />
 
-                            <!-- Subtle Label -->
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginBottom="2dp"
-                                android:background="@drawable/bg_camera_placeholder"
-                                android:fontFamily="sans-serif-medium"
-                                android:letterSpacing="0.05"
-                                android:text="HEALTH SCORE"
-                                android:textAllCaps="true"
-                                android:textColor="@color/ps_text_primary"
-                                android:textSize="12sp" />
+                        <TextView
+                            android:id="@+id/tvAiInsightTitle"
+                            style="@style/PD.Text"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="6dp"
+                            android:layout_marginEnd="12dp"
+                            android:text="@string/pd_insights_title"
+                            android:textColor="@color/pd_on_gradient"
+                            android:textSize="20sp"
+                            android:textStyle="bold"
+                            app:layout_constraintEnd_toStartOf="@id/cardHealthScoreChip"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toBottomOf="@id/tvInsightEyebrow" />
 
-                            <!-- Score Value -->
-                            <TextView
-                                android:id="@+id/tvHealthScoreValue"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:fontFamily="sans-serif-black"
-                                android:text="86"
-                                android:textColor="@color/ps_text_primary"
-                                android:textSize="48sp"
-                                android:includeFontPadding="false" />
+                        <TextView
+                            android:id="@+id/tvAiInsightText"
+                            style="@style/PD.Text"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="10dp"
+                            android:layout_marginEnd="12dp"
+                            android:lineSpacingMultiplier="1.3"
+                            android:textColor="@color/pd_on_gradient_body"
+                            android:textSize="13sp"
+                            app:layout_constraintEnd_toStartOf="@id/cardHealthScoreChip"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toBottomOf="@id/tvAiInsightTitle"
+                            tools:text="Max is having a highly relaxed day. Activity peaked during his morning walk, and he has been resting optimally." />
 
-                            <!-- High-Visibility Status Pill -->
-                            <TextView
-                                android:id="@+id/tvHealthScoreStatus"
-                                android:layout_width="wrap_content"
+                        <!-- Ensures the layout wraps below the body text when it is taller than the chip -->
+                        <android.widget.Space
+                            android:layout_width="0dp"
+                            android:layout_height="4dp"
+                            app:layout_constraintBottom_toBottomOf="parent"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toBottomOf="@id/tvAiInsightText" />
+
+                        <!-- Health Score chip (white card, right) -->
+                        <com.google.android.material.card.MaterialCardView
+                            android:id="@+id/cardHealthScoreChip"
+                            android:layout_width="136dp"
+                            android:layout_height="wrap_content"
+                            app:cardBackgroundColor="@color/pd_surface"
+                            app:cardCornerRadius="20dp"
+                            app:cardElevation="0dp"
+                            app:layout_constraintBottom_toBottomOf="parent"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintTop_toTopOf="parent"
+                            app:strokeWidth="0dp">
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:layout_marginTop="6dp"
-                                android:background="@drawable/bg_status_pill"
-                                android:paddingHorizontal="14dp"
-                                android:paddingVertical="4dp"
-                                android:text="@string/ps_health_score_status_good"
-                                android:textColor="@color/ps_pastel_green_on"
-                                android:textSize="13sp"
-                                android:fontFamily="sans-serif-medium" />
-                        </LinearLayout>
-                    </FrameLayout>
+                                android:gravity="center_horizontal"
+                                android:orientation="vertical"
+                                android:paddingHorizontal="8dp"
+                                android:paddingVertical="12dp">
+
+                                <TextView
+                                    style="@style/PD.Text"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="@string/pd_health_score_title"
+                                    android:textSize="13sp"
+                                    android:textStyle="bold" />
+
+                                <FrameLayout
+                                    android:layout_width="96dp"
+                                    android:layout_height="58dp"
+                                    android:layout_marginTop="8dp">
+
+                                    <com.example.pet.ui.dashboard.HealthScoreView
+                                        android:id="@+id/healthScoreView"
+                                        android:layout_width="match_parent"
+                                        android:layout_height="match_parent"
+                                        android:contentDescription="@string/ps_cd_health_score"
+                                        app:gaugeStrokeWidth="@dimen/pd_gauge_stroke_width"
+                                        app:maxScore="100"
+                                        app:showLabels="false" />
+
+                                    <TextView
+                                        android:id="@+id/tvHealthScoreValue"
+                                        style="@style/PD.Text"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:layout_gravity="bottom|center_horizontal"
+                                        android:layout_marginBottom="1dp"
+                                        android:fontFeatureSettings="tnum"
+                                        android:textSize="30sp"
+                                        android:textStyle="bold"
+                                        tools:text="82" />
+                                </FrameLayout>
+
+                                <TextView
+                                    android:id="@+id/tvHealthScoreStatus"
+                                    style="@style/PD.Text.Pill"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="6dp"
+                                    android:text="@string/ps_health_score_status_good"
+                                    android:textColor="@color/pd_green_text" />
+
+                                <TextView
+                                    android:id="@+id/tvHealthScoreDelta"
+                                    style="@style/PD.Text"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="6dp"
+                                    android:textColor="@color/pd_green_text"
+                                    android:textSize="10sp"
+                                    android:textStyle="bold"
+                                    android:visibility="gone"
+                                    tools:text="↑ +5 from yesterday"
+                                    tools:visibility="visible" />
+                            </LinearLayout>
+                        </com.google.android.material.card.MaterialCardView>
+                    </androidx.constraintlayout.widget.ConstraintLayout>
                 </com.google.android.material.card.MaterialCardView>
 
-                <!-- Sleep / Activity / Feeding / Water — compact 2x2 grid, easy to scan -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
-                    android:orientation="horizontal">
-
-                    <com.google.android.material.card.MaterialCardView
-                        android:id="@+id/tileSleep"
-                        style="@style/PS.Card.Tile"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginEnd="10dp"
-                        android:layout_weight="1">
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:orientation="vertical"
-                            android:padding="14dp">
-
-                            <ImageView
-                                style="@style/PS.IconBubble"
-                                android:layout_width="34dp"
-                                android:layout_height="34dp"
-                                android:padding="9dp"
-                                android:src="@drawable/ic_ps_sleep" />
-
-                            <TextView
-                                style="@style/PS.Text.Caption"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="10dp"
-                                android:letterSpacing="0.01"
-                                android:text="@string/ps_glance_sleep" />
-
-                            <TextView
-                                android:id="@+id/tvSleepValue"
-                                style="@style/PS.Text.Value"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="2dp"
-                                android:fontFamily="sans-serif-medium"
-                                android:fontFeatureSettings="tnum"
-                                android:text="@string/ps_glance_sleep_value" />
-
-                            <TextView
-                                android:id="@+id/tvSleepStatus"
-                                style="@style/PS.Text.Caption"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="@string/ps_glance_sleep_status" />
-                        </LinearLayout>
-                    </com.google.android.material.card.MaterialCardView>
-
-                    <com.google.android.material.card.MaterialCardView
-                        android:id="@+id/tileActivity"
-                        style="@style/PS.Card.Tile"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1">
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:orientation="vertical"
-                            android:padding="14dp">
-
-                            <ImageView
-                                style="@style/PS.IconBubble"
-                                android:layout_width="34dp"
-                                android:layout_height="34dp"
-                                android:padding="9dp"
-                                android:src="@drawable/ic_ps_activity" />
-
-                            <TextView
-                                style="@style/PS.Text.Caption"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="10dp"
-                                android:letterSpacing="0.01"
-                                android:text="@string/ps_glance_activity" />
-
-                            <TextView
-                                android:id="@+id/tvActivityValue"
-                                style="@style/PS.Text.Value"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="2dp"
-                                android:fontFamily="sans-serif-medium"
-                                android:fontFeatureSettings="tnum"
-                                android:text="@string/ps_glance_activity_value" />
-
-                            <TextView
-                                android:id="@+id/tvActivityStatus"
-                                style="@style/PS.Text.Caption"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="@string/ps_glance_activity_status" />
-                        </LinearLayout>
-                    </com.google.android.material.card.MaterialCardView>
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
-                    android:orientation="horizontal">
-
-                    <com.google.android.material.card.MaterialCardView
-                        android:id="@+id/tileFeeding"
-                        style="@style/PS.Card.Tile"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginEnd="10dp"
-                        android:layout_weight="1">
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:orientation="vertical"
-                            android:padding="14dp">
-
-                            <ImageView
-                                style="@style/PS.IconBubble"
-                                android:layout_width="34dp"
-                                android:layout_height="34dp"
-                                android:padding="9dp"
-                                android:src="@drawable/ic_ps_nutrition" />
-
-                            <TextView
-                                style="@style/PS.Text.Caption"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="10dp"
-                                android:letterSpacing="0.01"
-                                android:text="@string/ps_glance_feeding" />
-
-                            <TextView
-                                android:id="@+id/tvFeedingValue"
-                                style="@style/PS.Text.Value"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="2dp"
-                                android:fontFamily="sans-serif-medium"
-                                android:fontFeatureSettings="tnum"
-                                android:text="@string/ps_glance_feeding_value" />
-
-                            <TextView
-                                android:id="@+id/tvFeedingStatus"
-                                style="@style/PS.Text.Caption"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="@string/ps_glance_feeding_status" />
-                        </LinearLayout>
-                    </com.google.android.material.card.MaterialCardView>
-
-                    <com.google.android.material.card.MaterialCardView
-                        android:id="@+id/tileWater"
-                        style="@style/PS.Card.Tile"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1">
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:orientation="vertical"
-                            android:padding="14dp">
-
-                            <ImageView
-                                style="@style/PS.IconBubble"
-                                android:layout_width="34dp"
-                                android:layout_height="34dp"
-                                android:padding="9dp"
-                                android:src="@drawable/ic_ps_water" />
-
-                            <TextView
-                                style="@style/PS.Text.Caption"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="10dp"
-                                android:letterSpacing="0.01"
-                                android:text="@string/ps_glance_water" />
-
-                            <TextView
-                                android:id="@+id/tvWaterValue"
-                                style="@style/PS.Text.Value"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="2dp"
-                                android:fontFamily="sans-serif-medium"
-                                android:fontFeatureSettings="tnum"
-                                android:text="@string/ps_glance_water_value" />
-
-                            <TextView
-                                android:id="@+id/tvWaterStatus"
-                                style="@style/PS.Text.Caption"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="@string/ps_glance_water_status" />
-                        </LinearLayout>
-                    </com.google.android.material.card.MaterialCardView>
-                </LinearLayout>
-
-                <!-- 7. OPTIONAL LOW-PRIORITY CARD: reuses your existing preventive-care feature,
-                     not a new/fake one — kept small and below the fold on purpose. -->
+                <!-- BEHAVIOR BANNER (tap opens Add Activity — unchanged behaviour) -->
                 <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/cardPreventive"
-                    style="@style/PS.Card.Clickable"
+                    android:id="@+id/cardBehaviorBanner"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="14dp"
-                    app:cardBackgroundColor="@color/ps_pastel_peach"
-                    app:cardCornerRadius="@dimen/ps_card_radius_lg"
-                    app:cardElevation="0dp">
+                    android:layout_marginTop="12dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    app:cardBackgroundColor="@color/pd_amber_bg"
+                    app:cardCornerRadius="18dp"
+                    app:cardElevation="0dp"
+                    app:strokeColor="@color/pd_amber_stroke"
+                    app:strokeWidth="1dp">
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:gravity="center_vertical"
+                        android:minHeight="48dp"
                         android:orientation="horizontal"
-                        android:padding="14dp">
+                        android:paddingHorizontal="16dp"
+                        android:paddingVertical="12dp">
+
+                        <TextView
+                            android:id="@+id/tvBehaviorBannerText"
+                            style="@style/PD.Text"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:ellipsize="end"
+                            android:maxLines="1"
+                            android:textColor="@color/pd_amber_text"
+                            android:textSize="13sp"
+                            tools:text="1:45 PM  ·  Walking behavior logged" />
 
                         <ImageView
-                            android:layout_width="40dp"
-                            android:layout_height="40dp"
-                            android:background="@drawable/bg_pastel_circle"
-                            android:backgroundTint="@color/ps_surface"
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:layout_marginStart="8dp"
+                            android:src="@drawable/pd_ic_sparkle"
+                            app:tint="@color/pd_amber_icon" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- METRICS ROW 1: Sleep | Activity -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:baselineAligned="false"
+                    android:orientation="horizontal">
+
+                    <!-- SLEEP -->
+                    <com.google.android.material.card.MaterialCardView
+                        android:id="@+id/tileSleep"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_marginEnd="6dp"
+                        android:layout_weight="1"
+                        app:cardBackgroundColor="@color/pd_surface"
+                        app:cardCornerRadius="20dp"
+                        app:cardElevation="1dp"
+                        app:strokeColor="@color/pd_card_stroke"
+                        app:strokeWidth="1dp">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:padding="16dp">
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:gravity="center_vertical"
+                                android:orientation="horizontal">
+
+                                <ImageView
+                                    android:layout_width="40dp"
+                                    android:layout_height="40dp"
+                                    android:background="@drawable/pd_bg_icon_lavender"
+                                    android:padding="9dp"
+                                    android:src="@drawable/pd_ic_moon"
+                                    app:tint="@color/pd_primary" />
+
+                                <View
+                                    android:layout_width="0dp"
+                                    android:layout_height="1dp"
+                                    android:layout_weight="1" />
+
+                                <TextView
+                                    android:id="@+id/chipSleepStatus"
+                                    style="@style/PD.Text.Pill"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:maxLines="1"
+                                    android:ellipsize="end"
+                                    tools:text="Good" />
+                            </LinearLayout>
+
+                            <TextView
+                                style="@style/PD.Text.Label"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="14dp"
+                                android:text="@string/ps_glance_sleep" />
+
+                            <TextView
+                                android:id="@+id/tvSleepValue"
+                                style="@style/PD.Text.Value"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                tools:text="8h 20m" />
+
+                            <TextView
+                                android:id="@+id/tvSleepStatus"
+                                style="@style/PD.Text.Sub"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:maxLines="1"
+                                android:ellipsize="end"
+                                tools:text="Optimal rest cycle" />
+
+                            <View
+                                android:layout_width="match_parent"
+                                android:layout_height="1dp"
+                                android:layout_marginTop="14dp"
+                                android:background="@color/pd_divider" />
+
+                            <!-- Sleep-stage legend + segments (static: no stage data is stored) -->
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="10dp"
+                                android:orientation="horizontal"
+                                android:weightSum="3">
+
+                                <TextView
+                                    style="@style/PD.Text.Caption"
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:gravity="start"
+                                    android:text="@string/pd_stage_deep" />
+
+                                <TextView
+                                    style="@style/PD.Text.Caption"
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:gravity="center"
+                                    android:text="@string/pd_stage_rem" />
+
+                                <TextView
+                                    style="@style/PD.Text.Caption"
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:gravity="end"
+                                    android:text="@string/pd_stage_light" />
+                            </LinearLayout>
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="4dp"
+                                android:layout_marginTop="6dp"
+                                android:orientation="horizontal"
+                                android:weightSum="3">
+
+                                <View
+                                    android:id="@+id/progressSleepDeep"
+                                    android:layout_width="0dp"
+                                    android:layout_height="match_parent"
+                                    android:layout_marginEnd="2dp"
+                                    android:layout_weight="1"
+                                    android:background="@drawable/pd_bg_bar_segment"
+                                    android:backgroundTint="@color/pd_stage_deep" />
+
+                                <View
+                                    android:id="@+id/progressSleepRem"
+                                    android:layout_width="0dp"
+                                    android:layout_height="match_parent"
+                                    android:layout_marginHorizontal="2dp"
+                                    android:layout_weight="1"
+                                    android:background="@drawable/pd_bg_bar_segment"
+                                    android:backgroundTint="@color/pd_stage_rem" />
+
+                                <View
+                                    android:id="@+id/progressSleepLight"
+                                    android:layout_width="0dp"
+                                    android:layout_height="match_parent"
+                                    android:layout_marginStart="2dp"
+                                    android:layout_weight="1"
+                                    android:background="@drawable/pd_bg_bar_segment"
+                                    android:backgroundTint="@color/pd_stage_light" />
+                            </LinearLayout>
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <!-- ACTIVITY -->
+                    <com.google.android.material.card.MaterialCardView
+                        android:id="@+id/tileActivity"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_marginStart="6dp"
+                        android:layout_weight="1"
+                        app:cardBackgroundColor="@color/pd_surface"
+                        app:cardCornerRadius="20dp"
+                        app:cardElevation="1dp"
+                        app:strokeColor="@color/pd_card_stroke"
+                        app:strokeWidth="1dp">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:padding="16dp">
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:gravity="center_vertical"
+                                android:orientation="horizontal">
+
+                                <ImageView
+                                    android:layout_width="40dp"
+                                    android:layout_height="40dp"
+                                    android:background="@drawable/pd_bg_icon_lavender"
+                                    android:padding="9dp"
+                                    android:src="@drawable/pd_ic_pulse"
+                                    app:tint="@color/pd_primary" />
+
+                                <View
+                                    android:layout_width="0dp"
+                                    android:layout_height="1dp"
+                                    android:layout_weight="1" />
+
+                                <TextView
+                                    android:id="@+id/chipActivityStatus"
+                                    style="@style/PD.Text.Pill"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:maxLines="1"
+                                    android:ellipsize="end"
+                                    tools:text="Active" />
+                            </LinearLayout>
+
+                            <TextView
+                                style="@style/PD.Text.Label"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="14dp"
+                                android:text="@string/ps_glance_activity" />
+
+                            <TextView
+                                android:id="@+id/tvActivityValue"
+                                style="@style/PD.Text.Value"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                tools:text="Low" />
+
+                            <TextView
+                                android:id="@+id/tvActivityStatus"
+                                style="@style/PD.Text.Sub"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:maxLines="1"
+                                android:ellipsize="end"
+                                tools:text="Light indoor walk" />
+
+                            <View
+                                android:layout_width="match_parent"
+                                android:layout_height="1dp"
+                                android:layout_marginTop="14dp"
+                                android:background="@color/pd_divider" />
+
+                            <!-- Static trend graphic (no numeric activity series is stored) -->
+                            <ImageView
+                                android:id="@+id/ivActivitySparkline"
+                                android:layout_width="match_parent"
+                                android:layout_height="48dp"
+                                android:layout_marginTop="8dp"
+                                android:contentDescription="@string/pd_cd_activity_sparkline"
+                                android:scaleType="fitXY"
+                                android:src="@drawable/pd_sparkline_activity" />
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+                </LinearLayout>
+
+                <!-- METRICS ROW 2: Feeding | Water -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:baselineAligned="false"
+                    android:orientation="horizontal">
+
+                    <!-- FEEDING -->
+                    <com.google.android.material.card.MaterialCardView
+                        android:id="@+id/tileFeeding"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_marginEnd="6dp"
+                        android:layout_weight="1"
+                        app:cardBackgroundColor="@color/pd_surface"
+                        app:cardCornerRadius="20dp"
+                        app:cardElevation="1dp"
+                        app:strokeColor="@color/pd_card_stroke"
+                        app:strokeWidth="1dp">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:padding="16dp">
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:gravity="center_vertical"
+                                android:orientation="horizontal">
+
+                                <ImageView
+                                    android:layout_width="40dp"
+                                    android:layout_height="40dp"
+                                    android:background="@drawable/pd_bg_icon_amber"
+                                    android:padding="9dp"
+                                    android:src="@drawable/pd_ic_bowl"
+                                    app:tint="@color/pd_amber_icon" />
+
+                                <View
+                                    android:layout_width="0dp"
+                                    android:layout_height="1dp"
+                                    android:layout_weight="1" />
+
+                                <TextView
+                                    android:id="@+id/chipFeedingStatus"
+                                    style="@style/PD.Text.Pill"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:maxLines="1"
+                                    android:ellipsize="end"
+                                    tools:text="On Track" />
+                            </LinearLayout>
+
+                            <TextView
+                                style="@style/PD.Text.Label"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="14dp"
+                                android:text="@string/ps_glance_feeding" />
+
+                            <TextView
+                                android:id="@+id/tvFeedingValue"
+                                style="@style/PD.Text.Value"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                tools:text="2 / 2 meals" />
+
+                            <TextView
+                                android:id="@+id/tvFeedingStatus"
+                                style="@style/PD.Text.Sub"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:maxLines="1"
+                                android:ellipsize="end"
+                                tools:text="Evening snack left" />
+
+                            <View
+                                android:layout_width="match_parent"
+                                android:layout_height="1dp"
+                                android:layout_marginTop="14dp"
+                                android:background="@color/pd_divider" />
+
+                            <!-- Portions row (static: no per-portion data is stored) -->
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="12dp"
+                                android:gravity="center_vertical"
+                                android:orientation="horizontal">
+
+                                <TextView
+                                    style="@style/PD.Text.Caption"
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:text="@string/pd_portions" />
+
+                                <ImageView
+                                    android:layout_width="18dp"
+                                    android:layout_height="18dp"
+                                    android:src="@drawable/pd_ic_portion_done" />
+
+                                <ImageView
+                                    android:layout_width="18dp"
+                                    android:layout_height="18dp"
+                                    android:layout_marginStart="4dp"
+                                    android:src="@drawable/pd_ic_portion_done" />
+
+                                <ImageView
+                                    android:layout_width="18dp"
+                                    android:layout_height="18dp"
+                                    android:layout_marginStart="4dp"
+                                    android:src="@drawable/pd_ic_portion_add" />
+                            </LinearLayout>
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <!-- WATER -->
+                    <com.google.android.material.card.MaterialCardView
+                        android:id="@+id/tileWater"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_marginStart="6dp"
+                        android:layout_weight="1"
+                        app:cardBackgroundColor="@color/pd_surface"
+                        app:cardCornerRadius="20dp"
+                        app:cardElevation="1dp"
+                        app:strokeColor="@color/pd_card_stroke"
+                        app:strokeWidth="1dp">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:padding="16dp">
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:gravity="center_vertical"
+                                android:orientation="horizontal">
+
+                                <ImageView
+                                    android:layout_width="40dp"
+                                    android:layout_height="40dp"
+                                    android:background="@drawable/pd_bg_icon_cyan"
+                                    android:padding="9dp"
+                                    android:src="@drawable/pd_ic_drop"
+                                    app:tint="@color/pd_water_icon" />
+
+                                <View
+                                    android:layout_width="0dp"
+                                    android:layout_height="1dp"
+                                    android:layout_weight="1" />
+
+                                <TextView
+                                    android:id="@+id/chipWaterStatus"
+                                    style="@style/PD.Text.Pill"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:maxLines="1"
+                                    android:ellipsize="end"
+                                    tools:text="Normal" />
+                            </LinearLayout>
+
+                            <TextView
+                                style="@style/PD.Text.Label"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="14dp"
+                                android:text="@string/ps_glance_water" />
+
+                            <TextView
+                                android:id="@+id/tvWaterValue"
+                                style="@style/PD.Text.Value"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                tools:text="1.8 L" />
+
+                            <TextView
+                                android:id="@+id/tvWaterStatus"
+                                style="@style/PD.Text.Sub"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:maxLines="1"
+                                android:ellipsize="end"
+                                tools:text="90% of daily target" />
+
+                            <View
+                                android:layout_width="match_parent"
+                                android:layout_height="1dp"
+                                android:layout_marginTop="14dp"
+                                android:background="@color/pd_divider" />
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="10dp"
+                                android:gravity="center_vertical"
+                                android:orientation="horizontal">
+
+                                <TextView
+                                    android:id="@+id/tvWaterGoal"
+                                    style="@style/PD.Text.Caption"
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:text="@string/pd_water_goal"
+                                    android:textColor="@color/pd_water_icon" />
+
+                                <TextView
+                                    android:id="@+id/tvWaterPercent"
+                                    style="@style/PD.Text.Caption"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:textColor="@color/pd_water_icon"
+                                    tools:text="90%" />
+                            </LinearLayout>
+
+                            <com.google.android.material.progressindicator.LinearProgressIndicator
+                                android:id="@+id/progressWater"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="6dp"
+                                android:max="100"
+                                android:progress="90"
+                                app:indicatorColor="@color/pd_water_blue"
+                                app:trackColor="@color/pd_water_track"
+                                app:trackCornerRadius="4dp"
+                                app:trackThickness="8dp" />
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+                </LinearLayout>
+
+                <!-- CARE REMINDER -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardPreventive"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    app:cardBackgroundColor="@color/pd_amber_bg"
+                    app:cardCornerRadius="20dp"
+                    app:cardElevation="0dp"
+                    app:strokeColor="@color/pd_amber_stroke"
+                    app:strokeWidth="1dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:minHeight="72dp"
+                        android:orientation="horizontal"
+                        android:paddingStart="16dp"
+                        android:paddingTop="12dp"
+                        android:paddingEnd="12dp"
+                        android:paddingBottom="12dp">
+
+                        <ImageView
+                            android:layout_width="44dp"
+                            android:layout_height="44dp"
+                            android:background="@drawable/pd_bg_icon_amber"
                             android:padding="10dp"
-                            android:src="@drawable/ic_ps_shield"
-                            app:tint="@color/ps_pastel_peach_on" />
+                            android:src="@drawable/pd_ic_shield"
+                            app:tint="@color/pd_amber_icon" />
 
                         <LinearLayout
                             android:layout_width="0dp"
@@ -748,40 +928,45 @@
 
                             <TextView
                                 android:id="@+id/tvPreventiveTitle"
-                                style="@style/PS.Text.Label"
+                                style="@style/PD.Text"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:fontFamily="sans-serif-medium"
-                                android:text="@string/ps_care_reminder_title" />
+                                android:text="@string/ps_care_reminder_title"
+                                android:textSize="16sp"
+                                android:textStyle="bold" />
 
                             <TextView
                                 android:id="@+id/tvPreventiveDetail"
-                                style="@style/PS.Text.Caption"
+                                style="@style/PD.Text"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:layout_marginTop="3dp"
-                                android:letterSpacing="0.01"
-                                android:text="@string/ps_care_reminder_detail" />
+                                android:layout_marginTop="4dp"
+                                android:text="@string/ps_care_reminder_detail"
+                                android:textColor="@color/pd_amber_text"
+                                android:textSize="13sp" />
                         </LinearLayout>
 
-                        <TextView
+                        <com.google.android.material.button.MaterialButton
                             android:id="@+id/btnViewCareSchedule"
-                            style="@style/PS.Text.Value"
+                            style="@style/Widget.Material3.Button"
                             android:layout_width="wrap_content"
-                            android:layout_height="44dp"
-                            android:background="?attr/selectableItemBackground"
-                            android:fontFamily="sans-serif-medium"
-                            android:gravity="center"
-                            android:paddingHorizontal="4dp"
+                            android:layout_height="40dp"
+                            android:insetTop="0dp"
+                            android:insetBottom="0dp"
+                            android:minWidth="0dp"
+                            android:paddingHorizontal="22dp"
                             android:text="@string/ps_view_schedule"
-                            android:textColor="@color/ps_pastel_peach_on"
-                            android:textSize="13sp" />
+                            android:textColor="@color/pd_surface"
+                            android:textSize="14sp"
+                            app:backgroundTint="@color/pd_amber_button"
+                            app:cornerRadius="20dp" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
+
             </LinearLayout>
         </androidx.core.widget.NestedScrollView>
 
-        <!-- ===================== TAB PLACEHOLDER (unchanged) ===================== -->
+        <!-- ===================== PLACEHOLDER (unchanged) ===================== -->
         <LinearLayout
             android:id="@+id/placeholderContainer"
             android:layout_width="match_parent"
@@ -801,39 +986,42 @@
 
             <TextView
                 android:id="@+id/tvPlaceholderTitle"
-                style="@style/PS.Text.Title"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="20dp"
-                android:fontFamily="sans-serif-medium"
-                android:text="Health" />
+                android:text="Health"
+                android:textColor="@color/pd_text_primary"
+                android:textSize="17sp"
+                android:textStyle="bold" />
 
             <TextView
                 android:id="@+id/tvPlaceholderSubtitle"
-                style="@style/PS.Text.Body"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:gravity="center"
-                android:letterSpacing="0.01"
-                android:text="This screen is coming soon." />
+                android:text="This screen is coming soon."
+                android:textColor="@color/pd_text_muted"
+                android:textSize="14sp" />
         </LinearLayout>
     </FrameLayout>
 
-    <!-- ===================== BOTTOM NAVIGATION (unchanged) ===================== -->
-    <View
+    <!-- ===================== BOTTOM NAVIGATION ===================== -->
+    <com.google.android.material.divider.MaterialDivider
         android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:background="@color/ps_outline" />
+        android:layout_height="wrap_content"
+        app:dividerColor="@color/pd_divider" />
 
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottomNavigation"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/ps_surface"
-        app:elevation="8dp"
-        app:itemIconTint="@color/ps_bottom_nav_item"
-        app:itemTextColor="@color/ps_bottom_nav_item"
+        android:background="@color/pd_surface"
+        app:elevation="0dp"
+        app:itemActiveIndicatorStyle="@style/PD.BottomNav.ActiveIndicator"
+        app:itemIconTint="@color/pd_bottom_nav_icon"
+        app:itemTextColor="@color/pd_bottom_nav_text"
         app:labelVisibilityMode="labeled"
         app:menu="@menu/bottom_navigation_menu" />
+
 </LinearLayout>

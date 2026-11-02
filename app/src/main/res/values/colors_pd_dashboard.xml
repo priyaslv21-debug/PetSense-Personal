@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- NEW FILE. All names use the pd_ prefix so they cannot collide with existing ps_* / pet_* colors. -->
+<resources>
+    <!-- Surfaces -->
+    <color name="pd_background">#F5F2FC</color>
+    <color name="pd_surface">#FFFFFF</color>
+    <color name="pd_card_stroke">#EFEAF8</color>
+    <color name="pd_divider">#EFEAF7</color>
+
+    <!-- Brand purple -->
+    <color name="pd_primary">#5E35C0</color>
+    <color name="pd_lavender">#F1EBFC</color>
+    <color name="pd_lavender_stroke">#E3D8F8</color>
+
+    <!-- Text -->
+    <color name="pd_text_primary">#15132B</color>
+    <color name="pd_text_secondary">#8A91AA</color>
+    <color name="pd_text_muted">#6B7494</color>
+
+    <!-- Insight card gradient -->
+    <color name="pd_gradient_start">#5B3DC6</color>
+    <color name="pd_gradient_end">#7E22A8</color>
+    <color name="pd_on_gradient">#FFFFFF</color>
+    <color name="pd_on_gradient_body">#F1EAFF</color>
+    <color name="pd_on_gradient_muted">#D9CCF5</color>
+
+    <!-- Health gauge -->
+    <color name="pd_gauge_start">#5B2EC4</color>
+    <color name="pd_gauge_end">#B79CF0</color>
+    <color name="pd_gauge_track">#E9E3F7</color>
+
+    <!-- Status pills -->
+    <color name="pd_green_bg">#E6F6EE</color>
+    <color name="pd_green_text">#0E8A5F</color>
+    <color name="pd_green_stroke">#BFE8D4</color>
+    <color name="pd_purple_bg">#F1EAFB</color>
+    <color name="pd_purple_text">#7A32C9</color>
+    <color name="pd_purple_stroke">#E0D2F6</color>
+    <color name="pd_amber_bg">#FFF6DC</color>
+    <color name="pd_amber_text">#8A4B0F</color>
+    <color name="pd_amber_stroke">#F6DE9A</color>
+    <color name="pd_red_bg">#FDECEA</color>
+    <color name="pd_red_text">#C0392B</color>
+    <color name="pd_red_stroke">#F6C7C1</color>
+    <color name="pd_gray_bg">#EEF0F5</color>
+    <color name="pd_gray_text">#6B7280</color>
+    <color name="pd_gray_stroke">#DDE1EA</color>
+
+    <!-- Amber accents (banner, feeding, care reminder) -->
+    <color name="pd_amber_icon">#E8890C</color>
+    <color name="pd_amber_bubble">#FFEFC2</color>
+    <color name="pd_amber_button">#D9770A</color>
+
+    <!-- Water -->
+    <color name="pd_water_blue">#1E90F0</color>
+    <color name="pd_water_track">#E3F2FD</color>
+    <color name="pd_water_icon">#0E8FA8</color>
+    <color name="pd_cyan_bubble">#E0F7FA</color>
+
+    <!-- Sleep stage segments -->
+    <color name="pd_stage_deep">#5B2EC0</color>
+    <color name="pd_stage_rem">#A21FB5</color>
+    <color name="pd_stage_light">#C9B8EE</color>
+
+    <!-- Bottom navigation -->
+    <color name="pd_nav_unselected">#3C3A4E</color>
+</resources>

@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- One row in rvRecentAnalyses. Rows sit inside a single elevated card,
+     separated by a MaterialDividerItemDecoration (no card per row). -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:minHeight="@dimen/ps_size_72"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:paddingHorizontal="@dimen/ps_space_2"
+    android:paddingVertical="@dimen/ps_space_1"
+    android:background="?attr/selectableItemBackground"
+    android:clickable="true"
+    android:focusable="true">
+
+    <!-- Leading mood badge: tint with the same container color as the hero card -->
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/tvItemEmoji"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:minWidth="@dimen/ps_size_40"
+        android:minHeight="@dimen/ps_size_40"
+        android:background="@drawable/ps_bg_circle"
+        android:gravity="center"
+        android:importantForAccessibility="no"
+        android:includeFontPadding="false"
+        android:textAppearance="?attr/textAppearanceHeadlineSmall"
+        app:backgroundTint="?attr/colorSecondaryContainer"
+        tools:text="😌"/>
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:layout_marginStart="@dimen/ps_space_2"
+        android:orientation="vertical">
+
+        <!-- PRIMARY: behavior label (highest contrast) -->
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/tvItemBehavior"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textAppearance="?attr/textAppearanceTitleMedium"
+            android:textColor="?attr/colorOnSurface"
+            tools:text="Calm"/>
+
+        <!-- SECONDARY: time and source (lower contrast) -->
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/tvItemTime"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textAppearance="?attr/textAppearanceBodyMedium"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            tools:text="6:42 PM · Camera"/>
+    </LinearLayout>
+
+    <!-- Trailing confidence (secondary) -->
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/tvItemConfidence"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/ps_space_2"
+        android:textAppearance="?attr/textAppearanceLabelLarge"
+        android:textColor="?attr/colorOnSurfaceVariant"
+        tools:text="86%"/>
+</LinearLayout>

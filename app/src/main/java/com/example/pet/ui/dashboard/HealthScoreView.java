@@ -1,3 +1,4 @@
+
 package com.example.pet.ui.dashboard;
 
 import android.animation.ValueAnimator;
@@ -18,14 +19,18 @@ import androidx.core.content.ContextCompat;
 import com.example.pet.R;
 
 /**
- * Semicircular health-score gauge, drawn entirely with Canvas/Paint (no external
- * charting library). Shows a percentage in the center and a short status label
- * below it. Bind it from a ViewModel/Activity — nothing here is hardcoded:
+ * Semicircular health-score gauge drawn with Canvas/Paint (no charting library).
  *
- *   healthScoreView.setScore(86);
- *   healthScoreView.setStatusText("Good");
+ * Public API is unchanged:
+ *   setScore(int), setScore(int, String), setStatusText(String), getScore(), setMaxScore(int)
+ * Added:
+ *   showLabels (XML attr / setShowLabels) - when false (dashboard) only the arc is drawn, because the
+ *   score number and status pill are separate views in activity_main.xml.
  *
- * Both setters animate the arc smoothly from its current value to the new one.
+ * Fixes vs. the previous version:
+ *   - The sweep gradient now spans the visible arc (180deg..360deg). Before, both visible stops were the
+ *     same colour, so the arc rendered as a solid colour.
+ *   - The animator is cancelled when the view detaches.
  */
 public class HealthScoreView extends View {
 
@@ -43,6 +48,7 @@ public class HealthScoreView extends View {
     private float displayedScore = 0f; // animates towards targetScore
     private String statusText = "";
     private float strokeWidthPx;
+    private boolean showLabels = true;
 
     @ColorInt private int gaugeStartColor;
     @ColorInt private int gaugeEndColor;
@@ -64,16 +70,11 @@ public class HealthScoreView extends View {
     }
 
     private void init(Context context, @Nullable AttributeSet attrs) {
-        gaugeStartColor = ContextCompat.getColor(context, R.color.ps_gauge_start);
-        gaugeEndColor = ContextCompat.getColor(context, R.color.ps_gauge_end);
-        trackColor = ContextCompat.getColor(context, R.color.ps_text_primary); // fallback, overridden below
-        try {
-            trackColor = ContextCompat.getColor(context, R.color.ps_gauge_track);
-        } catch (Exception ignored) {
-            // Falls back silently if ps_gauge_track hasn't been merged into the host project yet.
-        }
+        gaugeStartColor = ContextCompat.getColor(context, R.color.pd_gauge_start);
+        gaugeEndColor = ContextCompat.getColor(context, R.color.pd_gauge_end);
+        trackColor = ContextCompat.getColor(context, R.color.pd_gauge_track);
 
-        strokeWidthPx = getResources().getDimension(R.dimen.ps_gauge_stroke_width);
+        strokeWidthPx = getResources().getDimension(R.dimen.pd_gauge_stroke_width);
         statusText = getResources().getString(R.string.ps_health_score_status_good);
 
         if (attrs != null) {
@@ -81,12 +82,13 @@ public class HealthScoreView extends View {
                     attrs, R.styleable.HealthScoreView, 0, 0);
             try {
                 targetScore = a.getInt(R.styleable.HealthScoreView_score, 0);
-                maxScore = a.getInt(R.styleable.HealthScoreView_maxScore, DEFAULT_MAX_SCORE);
+                maxScore = Math.max(1, a.getInt(R.styleable.HealthScoreView_maxScore, DEFAULT_MAX_SCORE));
                 String attrStatus = a.getString(R.styleable.HealthScoreView_statusText);
                 if (attrStatus != null) {
                     statusText = attrStatus;
                 }
                 strokeWidthPx = a.getDimension(R.styleable.HealthScoreView_gaugeStrokeWidth, strokeWidthPx);
+                showLabels = a.getBoolean(R.styleable.HealthScoreView_showLabels, true);
             } finally {
                 a.recycle();
             }
@@ -110,12 +112,12 @@ public class HealthScoreView extends View {
         statusTextPaint.setTextAlign(Paint.Align.CENTER);
     }
 
-    /** Sets the score (0..maxScore) and animates the arc to it. Never hardcode this — always call it. */
+    /** Sets the score (0..maxScore) and animates the arc to it. */
     public void setScore(int score) {
         setScore(score, null);
     }
 
-    /** Same as {@link #setScore(int)} but also updates the status label shown under the percentage. */
+    /** Same as {@link #setScore(int)} but also updates the status label (only drawn when showLabels is true). */
     public void setScore(int score, @Nullable String newStatusText) {
         int clamped = Math.max(0, Math.min(score, maxScore));
         if (newStatusText != null) {
@@ -139,6 +141,11 @@ public class HealthScoreView extends View {
         invalidate();
     }
 
+    public void setShowLabels(boolean showLabels) {
+        this.showLabels = showLabels;
+        invalidate();
+    }
+
     private void animateTo(int newScore) {
         if (animator != null && animator.isRunning()) {
             animator.cancel();
@@ -156,9 +163,8 @@ public class HealthScoreView extends View {
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         int width = MeasureSpec.getSize(widthMeasureSpec);
-        // The gauge is a semicircle: usable height is roughly half the width,
-        // plus room below the arc for the percentage and status text.
-        int desiredHeight = (int) (width * 0.62f);
+        // Semicircle: usable height is roughly half the width, plus room for the optional labels.
+        int desiredHeight = (int) (width * (showLabels ? 0.62f : 0.55f));
         int height = resolveSize(desiredHeight, heightMeasureSpec);
         setMeasuredDimension(width, height);
     }
@@ -166,54 +172,69 @@ public class HealthScoreView extends View {
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
-        float inset = strokeWidthPx / 2f + getPaddingLeft();
-        float diameter = Math.min(w - getPaddingLeft() - getPaddingRight(),
-                (h - getPaddingBottom()) * 2f);
-        float left = (w - diameter) / 2f + strokeWidthPx / 2f;
-        float top = getPaddingTop() + strokeWidthPx / 2f;
-        float right = left + diameter - strokeWidthPx;
-        float bottom = top + diameter - strokeWidthPx;
-        arcBounds.set(left, top, right, bottom);
 
-        // Sweep gradient centered on the arc so it reads green -> lavender across the sweep,
-        // matching the "subtle green-to-purple" requirement without a static image.
+        float s = strokeWidthPx;
+        float availW = w - getPaddingLeft() - getPaddingRight();
+        float availH = h - getPaddingTop() - getPaddingBottom();
+
+        // Centre-line radius: the round caps (s/2) must stay inside the view horizontally and vertically.
+        float radius = Math.max(1f, Math.min(availW / 2f - s / 2f, availH - s));
+        float cx = getPaddingLeft() + availW / 2f;
+        float cy = getPaddingTop() + radius + s / 2f;
+        arcBounds.set(cx - radius, cy - radius, cx + radius, cy + radius);
+
+        // Visible arc covers sweep positions 0.5 (left, 180deg) .. 1.0 (right, 360deg):
+        // start colour at the left end, fading to the end colour at the right end.
         SweepGradient gradient = new SweepGradient(
-                arcBounds.centerX(), arcBounds.centerY(),
-                new int[]{gaugeStartColor, gaugeEndColor, gaugeEndColor},
+                cx, cy,
+                new int[]{gaugeStartColor, gaugeStartColor, gaugeEndColor},
                 new float[]{0f, 0.5f, 1f});
         progressPaint.setShader(gradient);
 
-        percentTextPaint.setTextSize(diameter * 0.20f);
-        statusTextPaint.setTextSize(diameter * 0.075f);
+        percentTextPaint.setTextSize(radius * 0.55f);
+        statusTextPaint.setTextSize(radius * 0.24f);
     }
 
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
 
-        // Background track: full semicircle from 180deg to 360deg (opens downward, like a smile).
+        // Background track: full semicircle from 180deg to 360deg.
         canvas.drawArc(arcBounds, 180f, 180f, false, trackPaint);
 
-        // Progress arc: proportion of the semicircle filled by the current animated score.
-        float fraction = maxScore == 0 ? 0 : (displayedScore / maxScore);
+        float fraction = maxScore == 0 ? 0f : Math.min(1f, displayedScore / maxScore);
         float sweep = 180f * fraction;
-        canvas.drawArc(arcBounds, 180f, sweep, false, progressPaint);
+        if (sweep > 0.5f) { // skip a lone round-cap dot when the score is 0
+            canvas.drawArc(arcBounds, 180f, sweep, false, progressPaint);
+        }
+
+        if (!showLabels) return;
 
         float centerX = arcBounds.centerX();
-        float arcBottomY = arcBounds.bottom;
-
-        int roundedScore = Math.round(displayedScore);
-        String percentLabel = roundedScore + "%";
-        float percentBaselineY = arcBottomY - (arcBounds.height() * 0.06f);
+        float centerY = arcBounds.centerY();
+        String percentLabel = Math.round(displayedScore) + "%";
+        float percentBaselineY = centerY - arcBounds.height() * 0.04f;
         canvas.drawText(percentLabel, centerX, percentBaselineY, percentTextPaint);
 
         if (statusText != null && !statusText.isEmpty()) {
-            float statusBaselineY = percentBaselineY + statusTextPaint.getTextSize() + dp(6);
-            canvas.drawText(statusText, centerX, statusBaselineY, statusTextPaint);
+            canvas.drawText(statusText, centerX,
+                    percentBaselineY + statusTextPaint.getTextSize() + dp(4), statusTextPaint);
         }
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        if (animator != null) {
+            animator.cancel();
+            animator = null;
+        }
+        displayedScore = targetScore;
+        super.onDetachedFromWindow();
     }
 
     private float dp(float value) {
         return value * getResources().getDisplayMetrics().density;
     }
 }
+
+

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 8dp grid: every margin and padding in the behavior screen comes from these -->
+    <dimen name="ps_space_1">8dp</dimen>
+    <dimen name="ps_space_2">16dp</dimen>
+    <dimen name="ps_space_3">24dp</dimen>
+    <dimen name="ps_space_4">32dp</dimen>
+    <dimen name="ps_space_5">40dp</dimen>
+    <dimen name="ps_space_6">48dp</dimen>
+
+    <!-- Component sizes (all multiples of 8) -->
+    <dimen name="ps_size_24">24dp</dimen>
+    <dimen name="ps_size_40">40dp</dimen>
+    <dimen name="ps_size_48">48dp</dimen>
+    <dimen name="ps_size_56">56dp</dimen>
+    <dimen name="ps_size_64">64dp</dimen>
+    <dimen name="ps_size_72">72dp</dimen>
+    <dimen name="ps_size_224">224dp</dimen>
+
+    <!-- Hairline for vertical dividers -->
+    <dimen name="ps_divider_thickness">1dp</dimen>
+
+    <!-- M3 extra-large shape for the hero card -->
+    <dimen name="ps_corner_xl">28dp</dimen>
+</resources>

@@ -1,9 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- NEW FILE. Custom attributes for com.example.pet.ui.dashboard.HealthScoreView. -->
 <resources>
     <declare-styleable name="HealthScoreView">
         <attr name="score" format="integer" />
         <attr name="maxScore" format="integer" />
         <attr name="statusText" format="string" />
         <attr name="gaugeStrokeWidth" format="dimension" />
+        <!-- When false the view draws only the arc; the number and status pill are separate views. -->
+        <attr name="showLabels" format="boolean" />
     </declare-styleable>
 </resources>

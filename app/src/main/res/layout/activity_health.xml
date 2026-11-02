@@ -109,11 +109,12 @@
                     android:paddingVertical="8dp"
                     android:elevation="1dp">
                     <TextView
+                        android:id="@+id/tvDateLabel"
                         style="@style/PS.Text.Label"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Today"
-                        android:textColor="@color/ps_primary"/>
+                        android:textColor="@color/ps_primary" />
                     <ImageView
                         android:layout_width="16dp"
                         android:layout_height="16dp"
@@ -187,41 +188,32 @@
                                 android:id="@+id/healthScoreView"
                                 android:layout_width="match_parent"
                                 android:layout_height="90dp"
-                                app:maxScore="100"/>
+                                app:maxScore="100"
+                                app:showLabels="false" />
 
-                            <LinearLayout
+                            <TextView
+                                android:id="@+id/tvHealthScoreValue"
+                                style="@style/PS.Text.Display"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_gravity="center_horizontal|bottom"
-                                android:gravity="center"
-                                android:orientation="vertical"
-                                android:layout_marginBottom="4dp">
-
-                                <TextView
-                                    android:id="@+id/tvHealthScoreValue"
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:text="86"
-                                    android:textSize="32sp"
-                                    android:textColor="@color/ps_text_primary"
-                                    android:fontFamily="sans-serif-medium"
-                                    android:includeFontPadding="false" />
-
-                                <!-- Status Pill matching the other cards in your theme -->
-                                <TextView
-                                    android:id="@+id/tvHealthScoreStatus"
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:layout_marginTop="4dp"
-                                    android:background="@drawable/bg_status_pill"
-                                    android:paddingHorizontal="10dp"
-                                    android:paddingVertical="4dp"
-                                    android:text="Good"
-                                    android:textColor="@color/ps_pastel_green_on"
-                                    android:textSize="11sp"
-                                    android:fontFamily="sans-serif-medium" />
-                            </LinearLayout>
+                                android:layout_marginBottom="4dp"
+                                android:fontFeatureSettings="tnum"
+                                tools:text="82" />
                         </FrameLayout>
+
+                        <TextView
+                            android:id="@+id/tvHealthScoreStatus"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:background="@drawable/bg_status_pill"
+                            android:fontFamily="sans-serif-medium"
+                            android:paddingHorizontal="10dp"
+                            android:paddingVertical="4dp"
+                            android:text="Good"
+                            android:textColor="@color/ps_pastel_green_on"
+                            android:textSize="11sp" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
@@ -379,6 +371,7 @@
 
             <!-- HEALTH INSIGHT CARD -->
             <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardHealthInsight"
                 style="@style/PS.Card"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"

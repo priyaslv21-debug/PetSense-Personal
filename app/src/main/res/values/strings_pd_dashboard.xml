@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- NEW FILE. ADDITIONS ONLY (pd_ prefix). Existing ps_* strings in strings_petsense_dashboard.xml are reused. -->
+<resources>
+    <string name="pd_add_pet">+ Add</string>
+    <string name="pd_cd_add_pet">Add a pet</string>
+    <string name="pd_cd_pet_selector">Switch pet</string>
+
+    <string name="pd_overview">Overview</string>
+    <string name="pd_insights_title">Today\'s Insights</string>
+    <string name="pd_health_score_title">Health Score</string>
+
+    <string name="pd_stage_deep">Deep</string>
+    <string name="pd_stage_rem">REM</string>
+    <string name="pd_stage_light">Light</string>
+    <string name="pd_portions">Portions</string>
+    <string name="pd_water_goal">Goal 2.0L</string>
+    <string name="pd_percent_format">%1$d%%</string>
+    <string name="pd_water_percent_of_target">%1$d%% of daily target</string>
+    <string name="pd_cd_activity_sparkline">Activity trend</string>
+
+    <string name="pd_updated_just_now">Updated just now</string>
+    <string name="pd_updated_minutes">Updated %1$dm ago</string>
+    <string name="pd_updated_hours">Updated %1$dh ago</string>
+    <string name="pd_updated_days">Updated %1$dd ago</string>
+
+    <string name="pd_health_delta_up">↑ +%1$d from yesterday</string>
+    <string name="pd_health_delta_down">↓ %1$d from yesterday</string>
+    <string name="pd_health_delta_same">No change from yesterday</string>
+</resources>

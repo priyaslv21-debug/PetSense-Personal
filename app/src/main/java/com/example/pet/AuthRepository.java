@@ -1,54 +1,58 @@
 
-package com.example.pet; // Replace with your actual package name
+package com.example.pet;
 
 import androidx.lifecycle.MutableLiveData;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 
 public class AuthRepository {
-    private final FirebaseAuth firebaseAuth;
+    private FirebaseAuth firebaseAuth;
 
     public AuthRepository() {
-        firebaseAuth = FirebaseAuth.getInstance();
+        try {
+            firebaseAuth = FirebaseAuth.getInstance();
+        } catch (Exception e) {
+            // Handle cases where Google Play Services or Firebase instance fails
+        }
+    }
+
+    private FirebaseAuth getFirebaseAuth() {
+        if (firebaseAuth == null) {
+            firebaseAuth = FirebaseAuth.getInstance();
+        }
+        return firebaseAuth;
     }
 
     public MutableLiveData<FirebaseUser> login(String email, String password) {
         MutableLiveData<FirebaseUser> userLiveData = new MutableLiveData<>();
 
-        firebaseAuth.signInWithEmailAndPassword(email, password)
-                .addOnCompleteListener(task -> {
-                    if (task.isSuccessful()) {
-                        userLiveData.setValue(firebaseAuth.getCurrentUser());
-                    } else {
-                        // In a real app, handle exceptions properly
-                        userLiveData.setValue(null);
-                    }
-                });
+        try {
+            FirebaseAuth auth = getFirebaseAuth();
+            if (auth == null) {
+                userLiveData.setValue(null);
+                return userLiveData;
+            }
+
+            auth.signInWithEmailAndPassword(email, password)
+                    .addOnCompleteListener(task -> {
+                        if (task.isSuccessful()) {
+                            userLiveData.setValue(auth.getCurrentUser());
+                        } else {
+                            userLiveData.setValue(null);
+                        }
+                    });
+        } catch (Exception e) {
+            userLiveData.setValue(null);
+        }
         return userLiveData;
     }
 
     public FirebaseUser getCurrentUser() {
-        return firebaseAuth.getCurrentUser();
+        try {
+            FirebaseAuth auth = getFirebaseAuth();
+            return auth != null ? auth.getCurrentUser() : null;
+        } catch (Exception e) {
+            return null;
+        }
     }
 }
-//com.example.pet
-//├── data                          ← new package
-//        │   ├── Pet.java
-//│   └── PetRepository.java
-//├── ui
-//│   ├── dashboard                 ← already exists
-//│   │   ├── DashboardViewModel.java   (overwrite existing)
-//│   │   └── HealthScoreView.java      (already there, don't touch)
-//        │   └── pets                      ← new package
-//        │       ├── PetAdapter.java
-//        │       ├── PetSelectorBottomSheet.java
-//        │       └── AddPetActivity.java
-//        ├── AuthRepository.java           (unchanged)
-//├── AuthViewModel.java            (unchanged)
-//├── LoginActivity.java            (unchanged)
-//└── MainActivity.java             (overwrite existing)
-//res/layout/
-//        ├── activity_main.xml             (overwrite existing)
-//├── activity_add_pet.xml          ← new
-//        ├── item_pet_row.xml              ← new
-//        └── bottom_sheet_pet_selector.xml ← new

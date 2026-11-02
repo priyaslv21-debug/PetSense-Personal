@@ -107,14 +107,14 @@
                 android:layout_marginTop="24dp"
                 app:cardCornerRadius="24dp"
                 app:cardBackgroundColor="@color/ps_surface">
-                
+
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
                     android:padding="20dp"
-                    android:background="@drawable/ps_bg_gradient_subtle"> <!-- Optional gradient if available, else standard surface -->
-                    
+                    android:background="@drawable/ps_bg_gradient_subtle">
+
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -133,7 +133,7 @@
                             android:textColor="@color/ps_primary"
                             android:text="AI Insight"/>
                     </LinearLayout>
-                    
+
                     <TextView
                         android:id="@+id/tvAiInsightText"
                         style="@style/PS.Text.Title"
@@ -162,7 +162,7 @@
                 android:layout_marginHorizontal="@dimen/ps_screen_padding"
                 android:layout_marginTop="28dp"
                 android:layout_marginBottom="12dp"
-                android:text="This Week"/>
+                android:text="Activity Summary"/>
 
             <GridLayout
                 android:layout_width="match_parent"
@@ -271,13 +271,63 @@
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
-                <!-- Behavior -->
+                <!-- Nutrition -->
                 <com.google.android.material.card.MaterialCardView
                     style="@style/PS.Card"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_columnWeight="1"
                     android:layout_marginEnd="6dp"
+                    android:layout_marginBottom="12dp"
+                    app:cardCornerRadius="20dp">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical">
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="🍽"
+                                android:textSize="18sp"/>
+                            <TextView
+                                style="@style/PS.Text.Label"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="8dp"
+                                android:text="Nutrition"/>
+                        </LinearLayout>
+                        <TextView
+                            android:id="@+id/tvThisWeekNutritionValue"
+                            style="@style/PS.Text.Display"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="12dp"
+                            android:textSize="22sp"
+                            android:textColor="@color/ps_pastel_green_on"
+                            tools:text="Normal"/>
+                        <TextView
+                            android:id="@+id/tvThisWeekNutritionDesc"
+                            style="@style/PS.Text.Caption"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            tools:text="Good"/>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Behavior -->
+                <com.google.android.material.card.MaterialCardView
+                    style="@style/PS.Card"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_columnWeight="1"
+                    android:layout_marginStart="6dp"
                     android:layout_marginBottom="12dp"
                     app:cardCornerRadius="20dp">
                     <LinearLayout
@@ -323,6 +373,47 @@
 
             </GridLayout>
 
+            <!-- ACTIVITY TREND -->
+            <TextView
+                style="@style/PS.Text.Title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="@dimen/ps_screen_padding"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="12dp"
+                android:text="Activity Trend"/>
+
+            <com.google.android.material.card.MaterialCardView
+                style="@style/PS.Card"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="@dimen/ps_screen_padding"
+                app:cardCornerRadius="20dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <LinearLayout
+                        android:id="@+id/trendBarsContainer"
+                        android:layout_width="match_parent"
+                        android:layout_height="64dp"
+                        android:gravity="bottom"
+                        android:orientation="horizontal"
+                        android:visibility="gone"/>
+
+                    <TextView
+                        android:id="@+id/tvTrendEmpty"
+                        style="@style/PS.Text.Caption"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"
+                        android:text="Add more activity records to see your trend."/>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
             <!-- PATTERN DETECTED -->
             <TextView
                 style="@style/PS.Text.Title"
@@ -331,7 +422,7 @@
                 android:layout_marginHorizontal="@dimen/ps_screen_padding"
                 android:layout_marginTop="16dp"
                 android:layout_marginBottom="12dp"
-                android:text="Pattern Detected"/>
+                android:text="Behavior Pattern"/>
 
             <com.google.android.material.card.MaterialCardView
                 style="@style/PS.Card"
@@ -339,13 +430,13 @@
                 android:layout_height="wrap_content"
                 android:layout_marginHorizontal="@dimen/ps_screen_padding"
                 app:cardCornerRadius="20dp">
-                
+
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
                     android:padding="16dp">
-                    
+
                     <TextView
                         android:id="@+id/tvPatternTitle"
                         style="@style/PS.Text.Label"
@@ -353,7 +444,7 @@
                         android:layout_height="wrap_content"
                         android:textColor="@color/ps_text_primary"
                         tools:text="🌙 Evening Activity"/>
-                    
+
                     <TextView
                         android:id="@+id/tvPatternDesc"
                         style="@style/PS.Text.Body"
@@ -373,13 +464,13 @@
                 android:layout_marginTop="16dp"
                 app:cardCornerRadius="20dp"
                 app:cardBackgroundColor="@color/ps_pastel_lavender">
-                
+
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
                     android:padding="16dp">
-                    
+
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -398,7 +489,7 @@
                             android:textColor="@color/ps_primary"
                             android:text="Recommended for Max"/>
                     </LinearLayout>
-                    
+
                     <TextView
                         android:id="@+id/tvRecommendation"
                         style="@style/PS.Text.Title"
@@ -411,6 +502,19 @@
                         tools:text="Try a short play session around his usual evening activity period."/>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
+
+            <!-- 🔴 NEW: EXPORT PDF BUTTON (Properly placed outside the card) -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnExportPdf"
+                style="@style/PS.Button.Quick"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:layout_marginHorizontal="@dimen/ps_screen_padding"
+                android:layout_marginTop="24dp"
+                android:layout_marginBottom="16dp"
+                app:cornerRadius="12dp"
+                app:iconGravity="textStart"
+                android:text="Export Health Report (PDF)" />
 
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
