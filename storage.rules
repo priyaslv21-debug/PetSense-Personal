@@ -1,0 +1,29 @@
+rules_version = '2';
+
+// Cloud Storage Security Rules for PetSense (petsense-personal)
+// Enforces strict per-user UID isolation, file-type filtering, and size quotas.
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Verify if the caller is the authenticated owner of the folder
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    // Verify file size limit (15 MB) and allowed document MIME types
+    function isValidLabDocument() {
+      return request.resource.size <= 15 * 1024 * 1024
+        && request.resource.contentType.matches('application/pdf|image/(jpeg|jpg|png)');
+    }
+
+    // Isolated user directory
+    // Actual PetSense path: users/{userId}/pets/{petId}/lab_records/{recordId}/{fileName}
+    match /users/{userId}/{allPaths=**} {
+      // Allow reading and deleting own files (delete does not evaluate request.resource)
+      allow read, delete: if isOwner(userId);
+
+      // Allow creating and updating only if within 15 MB and allowed MIME types (PDF, JPG, JPEG, PNG)
+      allow create, update: if isOwner(userId) && isValidLabDocument();
+    }
+  }
+}

@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "960281503173",
-    "project_id": "pet-pri",
-    "storage_bucket": "pet-pri.firebasestorage.app"
+    "project_number": "984697167860",
+    "project_id": "petsense-personal",
+    "storage_bucket": "petsense-personal.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:960281503173:android:2d04559e785b393dbf17ac",
+        "mobilesdk_app_id": "1:984697167860:android:63b7dcee39e90cb197a3a1",
         "android_client_info": {
           "package_name": "com.example.pet"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyAQ7R9_lM05Mepc5dgDf2JM-YpY_LbNht4"
+          "current_key": "AIzaSyCIM7t-CWS1zLGTOYPcSyldbuPBiGQiON4"
         }
       ],
       "services": {

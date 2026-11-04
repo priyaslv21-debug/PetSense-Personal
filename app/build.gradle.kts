@@ -62,4 +62,7 @@ dependencies {
 
     implementation("com.squareup.okhttp3:okhttp:4.11.0")
     implementation(libs.guava)
+
+    // ML Kit On-Device Text Recognition (OCR for PDF/Images)
+    implementation("com.google.mlkit:text-recognition:16.0.1")
 }

@@ -11,6 +11,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.view.WindowInsetsController;
+import android.widget.PopupMenu;
 import android.widget.Toast;
 
 import androidx.activity.OnBackPressedCallback;
@@ -26,6 +27,7 @@ import com.example.pet.ui.behavior.BehaviorActivity;
 import com.example.pet.ui.health.HealthActivity;
 import com.example.pet.ui.insights.InsightsActivity;
 import com.example.pet.ui.pets.AddPetActivity;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -38,12 +40,8 @@ import java.util.concurrent.Executors;
 /**
  * PetProfileActivity — Pet Profile Screen
  *
- * Changes in this version:
- *  - Picked images are copied to app-private storage and decoded down-sampled
- *    (no full-resolution decode on the UI thread, no expired content:// URIs).
- *  - Every image operation is wrapped so a bad/huge/unavailable image can never crash the app.
- *  - Bottom navigation passes the same pet extras that MainActivity passes.
- *  - Back handling uses OnBackPressedCallback (works with gesture back too).
+ * Provides pet details, photo updating, navigation to Health/Lab records,
+ * and options to share profile or log out safely from PetSense.
  */
 public class PetProfileActivity extends AppCompatActivity {
 
@@ -256,7 +254,7 @@ public class PetProfileActivity extends AppCompatActivity {
     }
 
     // ─────────────────────────────────────────────────────────────
-    //  Click Listeners
+    //  Click Listeners & Menu
     // ─────────────────────────────────────────────────────────────
 
     private void setupClickListeners() {
@@ -267,10 +265,8 @@ public class PetProfileActivity extends AppCompatActivity {
         binding.imgPet.setOnClickListener(v -> imagePickerLauncher.launch("image/*"));
         binding.imgEditPhoto.setOnClickListener(v -> imagePickerLauncher.launch("image/*"));
 
-        // More / options — placeholder for future popup menu
-        binding.btnMore.setOnClickListener(v -> {
-            // TODO: show PopupMenu with options (Share profile, Settings, etc.)
-        });
+        // More options — popup menu with Share profile & Log Out
+        binding.btnMore.setOnClickListener(this::showProfileOptionsMenu);
 
         // "Read more" toggle for the About section
         binding.tvReadMore.setOnClickListener(v -> toggleAboutExpanded());
@@ -284,10 +280,62 @@ public class PetProfileActivity extends AppCompatActivity {
             editPetLauncher.launch(editIntent);
         });
 
-        // Manage Health Records — secondary CTA
+        // Manage Health & Lab Records CTA
         binding.btnManageHealth.setOnClickListener(v -> {
-            // TODO: navigate to HealthRecordsActivity
+            Intent labIntent = new Intent(this, com.example.pet.ui.lab.LabHistoryActivity.class);
+            if (getIntent() != null) {
+                labIntent.putExtra(com.example.pet.ui.lab.LabHistoryActivity.EXTRA_PET_ID, getIntent().getStringExtra("id"));
+                labIntent.putExtra(com.example.pet.ui.lab.LabHistoryActivity.EXTRA_PET_NAME, getIntent().getStringExtra(AddPetActivity.EXTRA_PET_NAME));
+                labIntent.putExtra(com.example.pet.ui.lab.LabHistoryActivity.EXTRA_PET_SPECIES, getIntent().getStringExtra(AddPetActivity.EXTRA_PET_SPECIES));
+            }
+            startActivity(labIntent);
         });
+    }
+
+    private void showProfileOptionsMenu(View anchor) {
+        PopupMenu popup = new PopupMenu(this, anchor);
+        popup.getMenu().add(0, 1, 0, "Share Pet Profile");
+        popup.getMenu().add(0, 2, 1, "Log Out");
+
+        popup.setOnMenuItemClickListener(item -> {
+            if (item.getItemId() == 1) {
+                sharePetProfile();
+                return true;
+            } else if (item.getItemId() == 2) {
+                confirmLogout();
+                return true;
+            }
+            return false;
+        });
+        popup.show();
+    }
+
+    private void sharePetProfile() {
+        String petName = getIntent() != null ? getIntent().getStringExtra(AddPetActivity.EXTRA_PET_NAME) : "My Pet";
+        String breed = getIntent() != null ? getIntent().getStringExtra(AddPetActivity.EXTRA_PET_BREED) : "";
+        Intent shareIntent = new Intent(Intent.ACTION_SEND);
+        shareIntent.setType("text/plain");
+        shareIntent.putExtra(Intent.EXTRA_SUBJECT, "PetSense Profile - " + petName);
+        shareIntent.putExtra(Intent.EXTRA_TEXT, "Meet " + petName + (breed != null && !breed.isEmpty() ? " (" + breed + ")" : "") + " on PetSense!");
+        startActivity(Intent.createChooser(shareIntent, "Share Pet Profile"));
+    }
+
+    private void confirmLogout() {
+        new MaterialAlertDialogBuilder(this)
+                .setTitle("Log Out")
+                .setMessage("Are you sure you want to log out of PetSense?")
+                .setPositiveButton("Log Out", (dialog, which) -> executeLogout())
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    private void executeLogout() {
+        AuthRepository authRepo = new AuthRepository();
+        authRepo.logout();
+        Intent intent = new Intent(this, LoginActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(intent);
+        finish();
     }
 
     /** Sends the (possibly updated) pet data back to MainActivity and closes this screen. */
@@ -319,46 +367,40 @@ public class PetProfileActivity extends AppCompatActivity {
 
     private void setupBottomNavigation() {
         binding.bottomNavigationView.setSelectedItemId(R.id.nav_profile);
+
         binding.bottomNavigationView.setOnItemSelectedListener(item -> {
-            int itemId = item.getItemId();
-
-            if (itemId == R.id.nav_profile) {
-                return true;
+            int id = item.getItemId();
+            if (id == R.id.nav_profile) {
+                return true; // already on this screen
             }
-            if (itemId == R.id.nav_home) {
-                // Embed the currently-viewed pet's ID so MainActivity.onResume()
-                // can call selectPetById() after FLAG_ACTIVITY_REORDER_TO_FRONT.
-                Intent src = getIntent();
-                if (src != null) {
-                    String petId = src.getStringExtra("id");
-                    if (petId != null) {
-                        src.putExtra("selected_pet_id", petId);
-                    }
+
+            Intent next = destinationFor(id);
+            if (next == null) return false;
+
+            if (id == R.id.nav_home) {
+                // If the user picked a new photo while on Profile, pass the pet ID back
+                // so MainActivity can re-select and re-bind the avatar.
+                String petId = getIntent() != null ? getIntent().getStringExtra("id") : null;
+                if (petId != null) {
+                    next.putExtra("selected_pet_id", petId);
                 }
-                finishWithResult();
-                return true;
             }
 
-            Intent target = buildNavIntent(itemId);
-            if (target == null) return false;
-
-            // 🔴 PREVENT DUPLICATE SCREENS IN BACK-STACK
-            target.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
-
-            finishWithResult();
-            startActivity(target);
+            next.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+            startActivity(next);
             return true;
         });
     }
 
-    /** Builds the same intent (and extras) that MainActivity uses for each tab. */
-    private Intent buildNavIntent(int itemId) {
-        Intent src = getIntent();
-        String id = src != null ? src.getStringExtra("id") : null;
-        String name = src != null ? src.getStringExtra(AddPetActivity.EXTRA_PET_NAME) : null;
-        String breed = src != null ? src.getStringExtra(AddPetActivity.EXTRA_PET_BREED) : null;
-        String age = src != null ? src.getStringExtra(AddPetActivity.EXTRA_PET_AGE) : null;
+    private Intent destinationFor(int itemId) {
+        String id = getIntent() != null ? getIntent().getStringExtra("id") : null;
+        String name = getIntent() != null ? getIntent().getStringExtra(AddPetActivity.EXTRA_PET_NAME) : null;
+        String breed = getIntent() != null ? getIntent().getStringExtra(AddPetActivity.EXTRA_PET_BREED) : null;
+        String age = getIntent() != null ? getIntent().getStringExtra(AddPetActivity.EXTRA_PET_AGE) : null;
 
+        if (itemId == R.id.nav_home) {
+            return new Intent(this, MainActivity.class);
+        }
         if (itemId == R.id.nav_health) {
             return new Intent(this, HealthActivity.class);
         }
@@ -395,3 +437,4 @@ public class PetProfileActivity extends AppCompatActivity {
         binding = null;
     }
 }
+

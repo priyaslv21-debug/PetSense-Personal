@@ -23,10 +23,9 @@ public class LoginActivity extends AppCompatActivity {
         binding = LoginScreenBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
-        authViewModel = new ViewModelProvider(this)
-                .get(AuthViewModel.class);
+        authViewModel = new ViewModelProvider(this).get(AuthViewModel.class);
 
-        // Check if user is already logged in
+        // Session persistence: Check if user is already logged in
         if (authViewModel.getCurrentUser() != null) {
             new Handler(Looper.getMainLooper()).post(this::navigateToMain);
             return;
@@ -37,18 +36,9 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void setupClickListeners() {
-
         binding.btnLogin.setOnClickListener(v -> {
-
-            Toast.makeText(this, "Button works", Toast.LENGTH_SHORT).show();
-
-            String email = binding.etEmail.getText()
-                    .toString()
-                    .trim();
-
-            String password = binding.etPassword.getText()
-                    .toString()
-                    .trim();
+            String email = binding.etEmail.getText() != null ? binding.etEmail.getText().toString().trim() : "";
+            String password = binding.etPassword.getText() != null ? binding.etPassword.getText().toString().trim() : "";
 
             if (email.isEmpty()) {
                 binding.etEmail.setError("Enter your email");
@@ -60,60 +50,33 @@ public class LoginActivity extends AppCompatActivity {
                 return;
             }
 
-            Toast.makeText(
-                    this,
-                    "Attempting login...",
-                    Toast.LENGTH_SHORT
-            ).show();
-
             authViewModel.login(email, password);
         });
 
         binding.tvSignUp.setOnClickListener(v -> {
-            Toast.makeText(
-                    this,
-                    "Register screen coming soon!",
-                    Toast.LENGTH_SHORT
-            ).show();
+            Intent intent = new Intent(LoginActivity.this, RegisterActivity.class);
+            startActivity(intent);
         });
     }
 
     private void observeViewModel() {
-
         // Loading state
         authViewModel.getIsLoading().observe(this, isLoading -> {
-
             binding.btnLogin.setEnabled(!isLoading);
-
-            binding.btnLogin.setText(
-                    isLoading ? "Please wait..." : "Sign In"
-            );
+            binding.btnLogin.setText(isLoading ? "Please wait..." : "Sign In");
         });
 
         // Error messages
         authViewModel.getErrorMessage().observe(this, error -> {
-
             if (error != null && !error.isEmpty()) {
-
-                Toast.makeText(
-                        this,
-                        error,
-                        Toast.LENGTH_LONG
-                ).show();
+                Toast.makeText(this, error, Toast.LENGTH_LONG).show();
             }
         });
 
         // Login success
         authViewModel.getUserLiveData().observe(this, user -> {
-
             if (user != null) {
-
-                Toast.makeText(
-                        this,
-                        "Login Successful!",
-                        Toast.LENGTH_SHORT
-                ).show();
-
+                Toast.makeText(this, "Login Successful!", Toast.LENGTH_SHORT).show();
                 new Handler(Looper.getMainLooper()).post(this::navigateToMain);
             }
         });
@@ -124,13 +87,8 @@ public class LoginActivity extends AppCompatActivity {
             return;
         }
 
-        Intent intent = new Intent(
-                LoginActivity.this,
-                MainActivity.class
-        );
-
+        Intent intent = new Intent(LoginActivity.this, MainActivity.class);
         startActivity(intent);
-
         // Prevent returning to login with Back button
         finish();
     }
