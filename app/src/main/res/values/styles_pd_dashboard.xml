@@ -80,4 +80,10 @@
         <item name="android:width">56dp</item>
         <item name="android:height">32dp</item>
     </style>
+
+    <style name="PD.Button.Teal" parent="Widget.Material3.Button">
+        <item name="backgroundTint">@color/ps_primary</item>
+        <item name="android:textColor">@android:color/white</item>
+        <item name="cornerRadius">26dp</item>
+    </style>
 </resources>

@@ -1,19 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/ps_background"
     android:fitsSystemWindows="true"
     android:orientation="vertical">
 
-    <!-- Top bar: back + title, same visual language as the rest of the app -->
+    <!-- Top bar: back + title -->
     <LinearLayout
+        android:id="@+id/topBar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:padding="@dimen/ps_screen_padding">
+        android:paddingHorizontal="@dimen/ps_screen_padding"
+        android:paddingTop="12dp"
+        android:paddingBottom="8dp">
 
         <ImageButton
             android:id="@+id/btnAddPetBack"
@@ -26,10 +30,12 @@
             app:tint="@color/ps_text_primary" />
 
         <TextView
+            android:id="@+id/tvHeaderTitle"
             style="@style/PS.Text.Display"
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
+            android:layout_weight="1"
             android:fontFamily="sans-serif-black"
             android:text="@string/ps_add_pet_title" />
     </LinearLayout>
@@ -46,15 +52,82 @@
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:paddingHorizontal="@dimen/ps_screen_padding"
-            android:paddingBottom="28dp">
+            android:paddingBottom="32dp">
 
-            <!-- Species dropdown -->
+            <!-- Subtitle -->
+            <TextView
+                android:id="@+id/tvHeaderSubtitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:layout_marginBottom="16dp"
+                android:text="@string/ps_onboarding_pet_subtitle"
+                android:textColor="@color/pd_text_muted"
+                android:textSize="14sp"
+                android:lineSpacingExtra="3dp"
+                android:visibility="gone"
+                tools:visibility="visible" />
+
+            <!-- Profile Photo Selector Card -->
+            <LinearLayout
+                android:id="@+id/cardPhotoPicker"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:paddingVertical="8dp">
+
+                <com.google.android.material.imageview.ShapeableImageView
+                    android:id="@+id/imgPetPhoto"
+                    android:layout_width="96dp"
+                    android:layout_height="96dp"
+                    android:background="@color/pd_lavender"
+                    android:contentDescription="@string/cd_pet_photo"
+                    android:padding="2dp"
+                    android:scaleType="centerCrop"
+                    android:src="@drawable/pd_avatar_placeholder"
+                    app:shapeAppearanceOverlay="@style/PS.ShapeAppearance.Circle"
+                    app:strokeColor="@color/pd_primary"
+                    app:strokeWidth="2dp" />
+
+                <TextView
+                    android:id="@+id/btnChangePhoto"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:background="?attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:padding="6dp"
+                    android:text="@string/ps_add_photo"
+                    android:textColor="@color/pd_primary"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <!-- Pet Name (Required) -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/inputNameLayout"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:hint="@string/ps_field_pet_name">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/inputName"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textPersonName|textCapWords" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- Species Dropdown (Required) -->
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/inputSpeciesLayout"
                 style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
+                android:layout_marginTop="12dp"
                 android:hint="@string/ps_field_species">
 
                 <AutoCompleteTextView
@@ -64,29 +137,45 @@
                     android:inputType="none" />
             </com.google.android.material.textfield.TextInputLayout>
 
-            <!-- Pet name (required) -->
+            <!-- Breed (Required) -->
             <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/inputNameLayout"
+                android:id="@+id/inputBreedLayout"
                 style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="14dp"
-                android:hint="@string/ps_field_pet_name">
+                android:layout_marginTop="12dp"
+                android:hint="@string/ps_field_breed">
 
                 <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/inputName"
+                    android:id="@+id/inputBreed"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:inputType="textPersonName" />
+                    android:inputType="textCapWords" />
             </com.google.android.material.textfield.TextInputLayout>
 
-            <!-- Age (required) -->
+            <!-- Gender Dropdown (Required) -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/inputGenderLayout"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:hint="@string/ps_field_gender">
+
+                <AutoCompleteTextView
+                    android:id="@+id/inputGender"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="none" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- Age (Required) -->
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/inputAgeLayout"
                 style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="14dp"
+                android:layout_marginTop="12dp"
                 android:hint="@string/ps_field_age">
 
                 <com.google.android.material.textfield.TextInputEditText
@@ -96,30 +185,14 @@
                     android:inputType="text" />
             </com.google.android.material.textfield.TextInputLayout>
 
-            <!-- Breed (optional) -->
-            <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/inputBreedLayout"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="14dp"
-                android:hint="@string/ps_field_breed">
-
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/inputBreed"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:inputType="text" />
-            </com.google.android.material.textfield.TextInputLayout>
-
-            <!-- Weight -->
+            <!-- Weight (Required) -->
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/inputWeightLayout"
                 style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="14dp"
-                android:hint="Weight">
+                android:layout_marginTop="12dp"
+                android:hint="@string/ps_field_weight">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/inputWeight"
@@ -128,13 +201,13 @@
                     android:inputType="text" />
             </com.google.android.material.textfield.TextInputLayout>
 
-            <!-- Notes (optional) -->
+            <!-- Notes (Optional) -->
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/inputNotesLayout"
                 style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="14dp"
+                android:layout_marginTop="12dp"
                 android:hint="@string/ps_field_notes">
 
                 <com.google.android.material.textfield.TextInputEditText
@@ -146,12 +219,22 @@
                     android:minLines="3" />
             </com.google.android.material.textfield.TextInputLayout>
 
+            <!-- Progress Bar -->
+            <ProgressBar
+                android:id="@+id/progressBar"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_marginTop="16dp"
+                android:visibility="gone" />
+
+            <!-- Submit Button -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnSavePet"
                 style="@style/PS.Button.Quick"
                 android:layout_width="match_parent"
                 android:layout_height="52dp"
-                android:layout_marginTop="24dp"
+                android:layout_marginTop="20dp"
                 android:text="@string/ps_save_pet" />
 
         </LinearLayout>

@@ -32,34 +32,43 @@ public class LabTestItem implements Serializable {
     private String refRangeText;        // Raw reference interval string e.g. "10 - 100", "< 5.0"
     private String status;              // NORMAL | HIGH | LOW | UNCLASSIFIED | INCOMPLETE
     private String aiExplanation;       // Plain-language medical context
+    private String clinicalSignificance;// Possible medical significance of abnormal finding
+    private String recommendedFollowUp; // Actionable veterinary advice/follow-up
+    private boolean isUncertain;        // Flagged if OCR or range extraction has low confidence
+    private String uncertainReason;     // Explanation for why extraction was flagged uncertain
+    private boolean isSampleQualityWarning; // True for sample-level observations like Hemolysis, Lipemia
 
     /**
      * Required no-arg constructor for Firestore deserialization.
      */
     public LabTestItem() {
         this.status = STATUS_UNCLASSIFIED;
+        this.isUncertain = false;
+        this.isSampleQualityWarning = false;
     }
 
     public LabTestItem(String testName, String value, String unit, String refRangeText, String status) {
+        this();
         this.testName = testName;
         this.value = value;
         this.unit = unit;
         this.refRangeText = refRangeText;
         this.status = status != null ? status : STATUS_UNCLASSIFIED;
+        if (value != null) {
+            try {
+                this.numericValue = Double.parseDouble(value.trim().replace(',', '.'));
+            } catch (Exception ignored) {}
+        }
     }
 
     public LabTestItem(String testName, String category, String value, Double numericValue,
                        String unit, Double refRangeLow, Double refRangeHigh, String refRangeText,
                        String status, String aiExplanation) {
-        this.testName = testName;
+        this(testName, value, unit, refRangeText, status);
         this.category = category;
-        this.value = value;
         this.numericValue = numericValue;
-        this.unit = unit;
         this.refRangeLow = refRangeLow;
         this.refRangeHigh = refRangeHigh;
-        this.refRangeText = refRangeText;
-        this.status = status != null ? status : STATUS_UNCLASSIFIED;
         this.aiExplanation = aiExplanation;
     }
 
@@ -89,7 +98,13 @@ public class LabTestItem implements Serializable {
     }
 
     public Double getNumericValue() {
-        return numericValue;
+        if (numericValue != null) return numericValue;
+        if (value != null) {
+            try {
+                return Double.parseDouble(value.trim().replace(',', '.'));
+            } catch (Exception ignored) {}
+        }
+        return null;
     }
 
     public void setNumericValue(Double numericValue) {
@@ -142,6 +157,46 @@ public class LabTestItem implements Serializable {
 
     public void setAiExplanation(String aiExplanation) {
         this.aiExplanation = aiExplanation;
+    }
+
+    public String getClinicalSignificance() {
+        return clinicalSignificance;
+    }
+
+    public void setClinicalSignificance(String clinicalSignificance) {
+        this.clinicalSignificance = clinicalSignificance;
+    }
+
+    public String getRecommendedFollowUp() {
+        return recommendedFollowUp;
+    }
+
+    public void setRecommendedFollowUp(String recommendedFollowUp) {
+        this.recommendedFollowUp = recommendedFollowUp;
+    }
+
+    public boolean isUncertain() {
+        return isUncertain;
+    }
+
+    public void setUncertain(boolean uncertain) {
+        isUncertain = uncertain;
+    }
+
+    public String getUncertainReason() {
+        return uncertainReason;
+    }
+
+    public void setUncertainReason(String uncertainReason) {
+        this.uncertainReason = uncertainReason;
+    }
+
+    public boolean isSampleQualityWarning() {
+        return isSampleQualityWarning;
+    }
+
+    public void setSampleQualityWarning(boolean sampleQualityWarning) {
+        isSampleQualityWarning = sampleQualityWarning;
     }
 
     /**

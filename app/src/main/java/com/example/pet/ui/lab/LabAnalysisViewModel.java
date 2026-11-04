@@ -36,6 +36,10 @@ public class LabAnalysisViewModel extends ViewModel {
     private final MutableLiveData<String> petId = new MutableLiveData<>();
     private final MutableLiveData<String> petName = new MutableLiveData<>("Pet");
     private final MutableLiveData<String> species = new MutableLiveData<>("Dog");
+    private final MutableLiveData<String> petBreed = new MutableLiveData<>("");
+    private final MutableLiveData<String> petAge = new MutableLiveData<>("");
+    private final MutableLiveData<String> petGender = new MutableLiveData<>("");
+    private final MutableLiveData<String> petWeight = new MutableLiveData<>("");
 
     // Document State
     private Uri selectedFileUri;
@@ -47,10 +51,17 @@ public class LabAnalysisViewModel extends ViewModel {
     // Test Items State (Editable during OCR Verification)
     private final MutableLiveData<List<LabTestItem>> testItems = new MutableLiveData<>(new ArrayList<>());
 
+    // Extracted Document Metadata & Sample Quality
+    private final MutableLiveData<LabRuleEngine.ReportMetadata> reportMetadata = new MutableLiveData<>();
+    private final MutableLiveData<List<String>> sampleQualityWarnings = new MutableLiveData<>(new ArrayList<>());
+
     // AI & Clinical Insights
     private final MutableLiveData<String> aiSummary = new MutableLiveData<>("");
     private final MutableLiveData<String> vetRecommendations = new MutableLiveData<>("");
     private final MutableLiveData<String> vetQuestions = new MutableLiveData<>("");
+    private final MutableLiveData<List<String>> precautions = new MutableLiveData<>(new ArrayList<>());
+    private final MutableLiveData<String> veterinaryAttention = new MutableLiveData<>("Routine Wellness Review");
+    private final MutableLiveData<String> veterinaryAttentionDetails = new MutableLiveData<>("");
     private final MutableLiveData<Boolean> isAiAvailable = new MutableLiveData<>(true);
 
     // UI Status
@@ -61,15 +72,28 @@ public class LabAnalysisViewModel extends ViewModel {
     private final MutableLiveData<LabRecord> savedRecord = new MutableLiveData<>();
 
     // Getters
+    public LiveData<String> getPetId() { return petId; }
     public LiveData<String> getPetName() { return petName; }
     public LiveData<String> getSpecies() { return species; }
+    public LiveData<String> getPetBreed() { return petBreed; }
+    public LiveData<String> getPetAge() { return petAge; }
+    public LiveData<String> getPetGender() { return petGender; }
+    public LiveData<String> getPetWeight() { return petWeight; }
+
     public LiveData<Integer> getPageCount() { return pageCount; }
     public LiveData<String> getRawExtractedText() { return rawExtractedText; }
     public LiveData<List<LabTestItem>> getTestItems() { return testItems; }
+    public LiveData<LabRuleEngine.ReportMetadata> getReportMetadata() { return reportMetadata; }
+    public LiveData<List<String>> getSampleQualityWarnings() { return sampleQualityWarnings; }
+
     public LiveData<String> getAiSummary() { return aiSummary; }
     public LiveData<String> getVetRecommendations() { return vetRecommendations; }
     public LiveData<String> getVetQuestions() { return vetQuestions; }
+    public LiveData<List<String>> getPrecautions() { return precautions; }
+    public LiveData<String> getVeterinaryAttention() { return veterinaryAttention; }
+    public LiveData<String> getVeterinaryAttentionDetails() { return veterinaryAttentionDetails; }
     public LiveData<Boolean> getIsAiAvailable() { return isAiAvailable; }
+
     public LiveData<Boolean> getIsProcessing() { return isProcessing; }
     public LiveData<String> getProcessingMessage() { return processingMessage; }
     public LiveData<Integer> getUploadProgress() { return uploadProgress; }
@@ -81,9 +105,17 @@ public class LabAnalysisViewModel extends ViewModel {
     public String getSelectedMimeType() { return selectedMimeType; }
 
     public void initPetContext(String id, String name, String spec) {
+        initPetContext(id, name, spec, null, null, null, null);
+    }
+
+    public void initPetContext(String id, String name, String spec, String breed, String age, String gender, String weight) {
         if (id != null) petId.setValue(id);
         if (name != null && !name.trim().isEmpty()) petName.setValue(name);
         if (spec != null && !spec.trim().isEmpty()) species.setValue(spec);
+        if (breed != null) petBreed.setValue(breed);
+        if (age != null) petAge.setValue(age);
+        if (gender != null) petGender.setValue(gender);
+        if (weight != null) petWeight.setValue(weight);
     }
 
     public void setSelectedDocument(Uri uri, String fileName, String mimeType) {
@@ -102,17 +134,21 @@ public class LabAnalysisViewModel extends ViewModel {
         }
 
         isProcessing.setValue(true);
-        processingMessage.setValue("Reading document text with on-device OCR...");
+        processingMessage.setValue("Reading document with high-DPI OCR & spatial reconstruction...");
 
         LabDocumentParser parser = new LabDocumentParser(context);
         parser.parseDocumentAsync(selectedFileUri, selectedMimeType != null ? selectedMimeType : "application/pdf",
                 new LabDocumentParser.ParserCallback() {
                     @Override
-                    public void onSuccess(List<LabTestItem> parsedItems, String rawText, int pages) {
+                    public void onSuccess(List<LabTestItem> parsedItems, String rawText, int pages, LabRuleEngine.ReportMetadata metadata) {
                         isProcessing.setValue(false);
                         pageCount.setValue(pages);
                         rawExtractedText.setValue(rawText);
                         testItems.setValue(parsedItems);
+                        reportMetadata.setValue(metadata);
+                        if (metadata != null && metadata.sampleQualityWarnings != null) {
+                            sampleQualityWarnings.setValue(metadata.sampleQualityWarnings);
+                        }
                         parser.close();
                         onExtractionComplete.run();
                     }
@@ -155,34 +191,8 @@ public class LabAnalysisViewModel extends ViewModel {
     }
 
     /**
-     * Saves the verified lab report directly using report reference ranges,
-     * without triggering AI analysis or medical diagnosis.
-     */
-    public void saveVerifiedReport(String labName, Date reportDate, Runnable onComplete) {
-        saveVerifiedReport(null, labName, reportDate, onComplete);
-    }
-
-    public void saveVerifiedReport(@Nullable Context context, String labName, Date reportDate, Runnable onComplete) {
-        List<LabTestItem> current = testItems.getValue() != null ? testItems.getValue() : new ArrayList<>();
-        if (current.isEmpty()) {
-            errorMessage.setValue("No lab test parameters found. Please add at least one test.");
-            return;
-        }
-
-        // Re-classify all items strictly with the rule engine using report reference ranges only
-        for (LabTestItem item : current) {
-            LabRuleEngine.classifyTestItem(item);
-        }
-        testItems.setValue(current);
-
-        isProcessing.setValue(true);
-        uploadAndSaveRecord(context, labName, reportDate, onComplete);
-    }
-
-    /**
-     * Executes the deterministic rule engine re-check across all verified items,
-     * calls the secure AI service, and persists the record and document locally.
-     * If AI is unavailable, displays rule-based results WITHOUT generating a fake AI summary.
+     * Executes the deterministic rule engine check, calls the AI service with pet demographics,
+     * and persists the record and document locally.
      */
     public void confirmAndAnalyze(@NonNull Context context, String labName, Date reportDate, Runnable onComplete) {
         List<LabTestItem> current = testItems.getValue() != null ? testItems.getValue() : new ArrayList<>();
@@ -198,35 +208,52 @@ public class LabAnalysisViewModel extends ViewModel {
         testItems.setValue(current);
 
         isProcessing.setValue(true);
-        processingMessage.setValue("Generating AI explanations and clinical summary...");
+        processingMessage.setValue("Generating AI explanations and clinical insights...");
 
         String currentSpecies = species.getValue() != null ? species.getValue() : "Dog";
         String currentPetName = petName.getValue() != null ? petName.getValue() : "Pet";
+        String currentBreed = petBreed.getValue();
+        String currentAge = petAge.getValue();
+        String currentGender = petGender.getValue();
+        String currentWeight = petWeight.getValue();
 
-        aiService.analyzeReportAsync(currentSpecies, currentPetName, current, new LabAiService.AiAnalysisCallback() {
-            @Override
-            public void onSuccess(String overallSummary, String recommendations, String questions, List<LabTestItem> itemsWithExplanations) {
-                isAiAvailable.setValue(true);
-                aiSummary.setValue(overallSummary);
-                vetRecommendations.setValue(recommendations);
-                vetQuestions.setValue(questions);
-                testItems.setValue(itemsWithExplanations);
+        aiService.analyzeReportAsync(
+                currentSpecies, currentPetName, currentBreed, currentAge, currentGender, currentWeight,
+                current,
+                new LabAiService.AiAnalysisCallback() {
+                    @Override
+                    public void onSuccess(String overallSummary, String recommendations, String questions,
+                                          List<String> precs, String attention, String attentionDetails,
+                                          List<LabTestItem> itemsWithExplanations) {
+                        isAiAvailable.setValue(true);
+                        aiSummary.setValue(overallSummary);
+                        vetRecommendations.setValue(recommendations);
+                        vetQuestions.setValue(questions);
+                        precautions.setValue(precs);
+                        veterinaryAttention.setValue(attention);
+                        veterinaryAttentionDetails.setValue(attentionDetails);
+                        testItems.setValue(itemsWithExplanations);
 
-                uploadAndSaveRecord(context, labName, reportDate, onComplete);
-            }
+                        uploadAndSaveRecord(context, labName, reportDate, onComplete);
+                    }
 
-            @Override
-            public void onAiUnavailable(String noticeMessage, List<LabTestItem> ruleBasedItemsOnly) {
-                // If AI is unavailable, display the rule-based results without generating a fake AI summary.
-                isAiAvailable.setValue(false);
-                aiSummary.setValue(null);
-                vetRecommendations.setValue(null);
-                vetQuestions.setValue(null);
-                testItems.setValue(ruleBasedItemsOnly);
+                    @Override
+                    public void onAiUnavailable(String noticeMessage, String overallSummary, String recommendations,
+                                                String questions, List<String> precs, String attention,
+                                                String attentionDetails, List<LabTestItem> ruleBasedItemsOnly) {
+                        isAiAvailable.setValue(false);
+                        aiSummary.setValue(overallSummary);
+                        vetRecommendations.setValue(recommendations);
+                        vetQuestions.setValue(questions);
+                        precautions.setValue(precs);
+                        veterinaryAttention.setValue(attention);
+                        veterinaryAttentionDetails.setValue(attentionDetails);
+                        testItems.setValue(ruleBasedItemsOnly);
 
-                uploadAndSaveRecord(context, labName, reportDate, onComplete);
-            }
-        });
+                        uploadAndSaveRecord(context, labName, reportDate, onComplete);
+                    }
+                }
+        );
     }
 
     public void confirmAndAnalyze(String labName, Date reportDate, Runnable onComplete) {
@@ -237,11 +264,11 @@ public class LabAnalysisViewModel extends ViewModel {
         String currentPetId = petId.getValue();
         if (currentPetId == null || currentPetId.trim().isEmpty()) {
             isProcessing.setValue(false);
-            errorMessage.setValue("No active pet selected.");
+            errorMessage.setValue("No active pet selected. Please select a registered pet.");
             return;
         }
 
-        processingMessage.setValue("Saving original document to secure local storage...");
+        processingMessage.setValue("Securing original document in local storage...");
 
         String tempRecordId = "lab_" + System.currentTimeMillis();
         String fileName = selectedFileName != null ? selectedFileName : "lab_report.pdf";
@@ -286,9 +313,18 @@ public class LabAnalysisViewModel extends ViewModel {
                 selectedMimeType != null ? selectedMimeType : "application/pdf"
         );
 
+        record.setPetBreed(petBreed.getValue());
+        record.setPetAge(petAge.getValue());
+        record.setPetGender(petGender.getValue());
+        record.setPetWeight(petWeight.getValue());
+
         record.setAiSummary(aiSummary.getValue());
         record.setVetRecommendations(vetRecommendations.getValue());
         record.setVetQuestions(vetQuestions.getValue());
+        record.setPrecautions(precautions.getValue());
+        record.setVeterinaryAttention(veterinaryAttention.getValue());
+        record.setVeterinaryAttentionDetails(veterinaryAttentionDetails.getValue());
+        record.setSampleQualityWarnings(sampleQualityWarnings.getValue());
         record.setTests(testItems.getValue());
 
         repository.addLabRecord(currentPetId, record, new LabRepository.SaveLabRecordCallback() {

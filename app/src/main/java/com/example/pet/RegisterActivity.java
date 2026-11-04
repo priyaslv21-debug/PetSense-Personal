@@ -9,6 +9,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.example.pet.databinding.ActivityRegisterBinding;
+import com.example.pet.ui.pets.AddPetActivity;
 
 /**
  * Handles new user registration via Firebase Authentication.
@@ -84,8 +85,9 @@ public class RegisterActivity extends AppCompatActivity {
 
         authViewModel.getRegistrationSuccess().observe(this, success -> {
             if (Boolean.TRUE.equals(success)) {
-                Toast.makeText(this, "Account created successfully! Welcome to PetSense.", Toast.LENGTH_SHORT).show();
-                Intent intent = new Intent(RegisterActivity.this, MainActivity.class);
+                Toast.makeText(this, "Account created successfully! Let's set up your pet profile.", Toast.LENGTH_SHORT).show();
+                Intent intent = new Intent(RegisterActivity.this, AddPetActivity.class);
+                intent.putExtra(AddPetActivity.EXTRA_IS_ONBOARDING, true);
                 intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                 startActivity(intent);
                 finish();

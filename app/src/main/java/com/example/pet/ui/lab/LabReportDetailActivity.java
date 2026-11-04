@@ -1,6 +1,7 @@
 package com.example.pet.ui.lab;
 
 import android.content.Intent;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
@@ -115,7 +116,21 @@ public class LabReportDetailActivity extends AppCompatActivity {
         String dateStr = record.getReportDate() != null ? dateFormat.format(record.getReportDate()) : "Recent";
 
         binding.tvDetailTitle.setText(record.getLabName() != null ? record.getLabName() : "Laboratory Analysis");
-        binding.tvDetailSubtitle.setText(pet + " · " + species + " · " + dateStr);
+
+        // Pet Subtitle with Demographics
+        StringBuilder subSb = new StringBuilder();
+        subSb.append(pet).append(" · ").append(species);
+        if (record.getPetBreed() != null && !record.getPetBreed().trim().isEmpty()) {
+            subSb.append(" · ").append(record.getPetBreed());
+        }
+        if (record.getPetAge() != null && !record.getPetAge().trim().isEmpty()) {
+            subSb.append(" · ").append(record.getPetAge());
+        }
+        if (record.getPetWeight() != null && !record.getPetWeight().trim().isEmpty()) {
+            subSb.append(" · ").append(record.getPetWeight());
+        }
+        subSb.append(" · ").append(dateStr);
+        binding.tvDetailSubtitle.setText(subSb.toString());
 
         // Metrics Grid (Total, Normal, High, Low, Unclassified)
         binding.tvMetricTotal.setText(String.valueOf(record.getTotalTestsCount()));
@@ -144,6 +159,49 @@ public class LabReportDetailActivity extends AppCompatActivity {
             binding.tvAbnormalBadgeOffline.setBackgroundTintList(ContextCompat.getColorStateList(this, R.color.pd_green_bg));
         }
 
+        // Veterinary Attention Level Alert
+        String vetAttention = record.getVeterinaryAttention();
+        if (vetAttention == null || vetAttention.trim().isEmpty()) {
+            vetAttention = abnormal > 0 ? "PROMPT" : "ROUTINE";
+        }
+        binding.cardVeterinaryAttention.setVisibility(View.VISIBLE);
+        if ("URGENT".equalsIgnoreCase(vetAttention)) {
+            binding.cardVeterinaryAttention.setCardBackgroundColor(Color.parseColor("#FEE2E2"));
+            binding.cardVeterinaryAttention.setStrokeColor(Color.parseColor("#FCA5A5"));
+            binding.tvAttentionTitle.setText("🚨 Urgent Veterinary Attention Required");
+            binding.tvAttentionTitle.setTextColor(Color.parseColor("#991B1B"));
+        } else if ("PROMPT".equalsIgnoreCase(vetAttention)) {
+            binding.cardVeterinaryAttention.setCardBackgroundColor(Color.parseColor("#FEF3C7"));
+            binding.cardVeterinaryAttention.setStrokeColor(Color.parseColor("#FCD34D"));
+            binding.tvAttentionTitle.setText("🩺 Prompt Veterinary Consultation Recommended");
+            binding.tvAttentionTitle.setTextColor(Color.parseColor("#92400E"));
+        } else {
+            binding.cardVeterinaryAttention.setCardBackgroundColor(Color.parseColor("#ECFDF5"));
+            binding.cardVeterinaryAttention.setStrokeColor(Color.parseColor("#A7F3D0"));
+            binding.tvAttentionTitle.setText("✅ Routine Wellness Review");
+            binding.tvAttentionTitle.setTextColor(Color.parseColor("#065F46"));
+        }
+        String attentionDetails = record.getVeterinaryAttentionDetails();
+        if (attentionDetails != null && !attentionDetails.trim().isEmpty()) {
+            binding.tvAttentionDetails.setText(attentionDetails);
+            binding.tvAttentionDetails.setVisibility(View.VISIBLE);
+        } else {
+            binding.tvAttentionDetails.setVisibility(View.GONE);
+        }
+
+        // Sample Quality Warnings
+        if (record.getSampleQualityWarnings() != null && !record.getSampleQualityWarnings().isEmpty()) {
+            binding.cardDetailSampleQuality.setVisibility(View.VISIBLE);
+            StringBuilder sqSb = new StringBuilder();
+            for (String sq : record.getSampleQualityWarnings()) {
+                if (sqSb.length() > 0) sqSb.append("\n");
+                sqSb.append("• ").append(sq);
+            }
+            binding.tvDetailSampleQuality.setText(sqSb.toString());
+        } else {
+            binding.cardDetailSampleQuality.setVisibility(View.GONE);
+        }
+
         // AI Summary vs Offline Handling (no fake summary if null)
         String summary = record.getAiSummary();
         if (summary != null && !summary.trim().isEmpty()) {
@@ -153,6 +211,19 @@ public class LabReportDetailActivity extends AppCompatActivity {
         } else {
             binding.cardAiSummary.setVisibility(View.GONE);
             binding.cardAiOfflineNotice.setVisibility(View.VISIBLE);
+        }
+
+        // Precautions & Home Care Tips
+        if (record.getPrecautions() != null && !record.getPrecautions().isEmpty()) {
+            binding.cardPrecautions.setVisibility(View.VISIBLE);
+            StringBuilder precSb = new StringBuilder();
+            for (String p : record.getPrecautions()) {
+                if (precSb.length() > 0) precSb.append("\n");
+                precSb.append("• ").append(p);
+            }
+            binding.tvPrecautionsList.setText(precSb.toString());
+        } else {
+            binding.cardPrecautions.setVisibility(View.GONE);
         }
 
         // Veterinary Recommendations
@@ -247,7 +318,17 @@ public class LabReportDetailActivity extends AppCompatActivity {
         sb.append("🐾 PetSense Lab Report Summary\n");
         sb.append("━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
         sb.append("Pet: ").append(currentRecord.getPetName() != null ? currentRecord.getPetName() : "Pet");
-        sb.append(" (").append(currentRecord.getSpecies() != null ? currentRecord.getSpecies() : "Pet").append(")\n");
+        sb.append(" (").append(currentRecord.getSpecies() != null ? currentRecord.getSpecies() : "Pet");
+        if (currentRecord.getPetBreed() != null && !currentRecord.getPetBreed().trim().isEmpty()) {
+            sb.append(" · ").append(currentRecord.getPetBreed());
+        }
+        if (currentRecord.getPetAge() != null && !currentRecord.getPetAge().trim().isEmpty()) {
+            sb.append(" · ").append(currentRecord.getPetAge());
+        }
+        if (currentRecord.getPetWeight() != null && !currentRecord.getPetWeight().trim().isEmpty()) {
+            sb.append(" · ").append(currentRecord.getPetWeight());
+        }
+        sb.append(")\n");
         sb.append("Laboratory: ").append(currentRecord.getLabName() != null ? currentRecord.getLabName() : "Veterinary Diagnostics").append("\n");
         if (currentRecord.getReportDate() != null) {
             sb.append("Date: ").append(dateFormat.format(currentRecord.getReportDate())).append("\n");
@@ -256,9 +337,23 @@ public class LabReportDetailActivity extends AppCompatActivity {
         sb.append(currentRecord.getNormalCount()).append(" Normal, ");
         sb.append(currentRecord.getHighCount()).append(" High, ");
         sb.append(currentRecord.getLowCount()).append(" Low, ");
-        sb.append(currentRecord.getUnclassifiedCount()).append(" Unclassified)\n\n");
+        sb.append(currentRecord.getUnclassifiedCount()).append(" Unclassified)\n");
 
-        sb.append("📋 Test Parameters:\n");
+        if (currentRecord.getVeterinaryAttention() != null) {
+            sb.append("Veterinary Attention: ").append(currentRecord.getVeterinaryAttention()).append("\n");
+            if (currentRecord.getVeterinaryAttentionDetails() != null) {
+                sb.append("  Details: ").append(currentRecord.getVeterinaryAttentionDetails()).append("\n");
+            }
+        }
+
+        if (currentRecord.getSampleQualityWarnings() != null && !currentRecord.getSampleQualityWarnings().isEmpty()) {
+            sb.append("\n⚠️ Sample Quality Warnings:\n");
+            for (String sq : currentRecord.getSampleQualityWarnings()) {
+                sb.append("• ").append(sq).append("\n");
+            }
+        }
+
+        sb.append("\n📋 Test Parameters:\n");
         for (LabTestItem item : currentRecord.getTests()) {
             sb.append("• ").append(item.getTestName()).append(": ").append(item.getValue());
             if (item.getUnit() != null && !item.getUnit().isEmpty()) sb.append(" ").append(item.getUnit());
@@ -266,10 +361,26 @@ public class LabReportDetailActivity extends AppCompatActivity {
                 sb.append(" (Range: ").append(item.getRefRangeText()).append(")");
             }
             sb.append(" [").append(item.getStatus()).append("]\n");
+            if (item.getAiExplanation() != null && !item.getAiExplanation().isEmpty()) {
+                sb.append("   - What it represents: ").append(item.getAiExplanation()).append("\n");
+            }
+            if (item.getClinicalSignificance() != null && !item.getClinicalSignificance().isEmpty()) {
+                sb.append("   - Clinical Significance: ").append(item.getClinicalSignificance()).append("\n");
+            }
+            if (item.getRecommendedFollowUp() != null && !item.getRecommendedFollowUp().isEmpty()) {
+                sb.append("   - Follow-up: ").append(item.getRecommendedFollowUp()).append("\n");
+            }
         }
 
         if (currentRecord.getAiSummary() != null && !currentRecord.getAiSummary().trim().isEmpty()) {
             sb.append("\n✨ Clinical Summary:\n").append(currentRecord.getAiSummary()).append("\n");
+        }
+
+        if (currentRecord.getPrecautions() != null && !currentRecord.getPrecautions().isEmpty()) {
+            sb.append("\n🛡️ Precautions & Home Care:\n");
+            for (String p : currentRecord.getPrecautions()) {
+                sb.append("• ").append(p).append("\n");
+            }
         }
 
         if (currentRecord.getVetQuestions() != null && !currentRecord.getVetQuestions().trim().isEmpty()) {

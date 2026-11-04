@@ -15,10 +15,13 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.example.pet.data.LabTestItem;
+import com.example.pet.data.Pet;
+import com.example.pet.data.PetRepository;
 import com.example.pet.databinding.ActivityLabReportUploadBinding;
+import com.example.pet.lab.LabRuleEngine;
 
-import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Screen enabling users to upload pet laboratory reports (PDF, JPG, JPEG, PNG).
@@ -29,13 +32,22 @@ public class LabReportUploadActivity extends AppCompatActivity {
     public static final String EXTRA_PET_ID = "petId";
     public static final String EXTRA_PET_NAME = "petName";
     public static final String EXTRA_PET_SPECIES = "petSpecies";
+    public static final String EXTRA_PET_BREED = "petBreed";
+    public static final String EXTRA_PET_AGE = "petAge";
+    public static final String EXTRA_PET_GENDER = "petGender";
+    public static final String EXTRA_PET_WEIGHT = "petWeight";
 
     private ActivityLabReportUploadBinding binding;
     private LabAnalysisViewModel viewModel;
+    private final PetRepository petRepository = new PetRepository();
 
     private String petId = "";
     private String petName = "Pet";
     private String species = "Dog";
+    private String breed = "";
+    private String age = "";
+    private String gender = "";
+    private String weight = "";
 
     private final ActivityResultLauncher<String[]> filePickerLauncher = registerForActivityResult(
             new ActivityResultContracts.OpenDocument(),
@@ -53,6 +65,10 @@ public class LabReportUploadActivity extends AppCompatActivity {
         extractIntentExtras(getIntent());
         setupViews();
         observeViewModel();
+
+        if (petId == null || petId.trim().isEmpty()) {
+            fetchDefaultPet();
+        }
     }
 
     private void extractIntentExtras(Intent intent) {
@@ -60,21 +76,53 @@ public class LabReportUploadActivity extends AppCompatActivity {
             if (intent.hasExtra(EXTRA_PET_ID)) petId = intent.getStringExtra(EXTRA_PET_ID);
             if (intent.hasExtra(EXTRA_PET_NAME)) petName = intent.getStringExtra(EXTRA_PET_NAME);
             if (intent.hasExtra(EXTRA_PET_SPECIES)) species = intent.getStringExtra(EXTRA_PET_SPECIES);
+            if (intent.hasExtra(EXTRA_PET_BREED)) breed = intent.getStringExtra(EXTRA_PET_BREED);
+            if (intent.hasExtra(EXTRA_PET_AGE)) age = intent.getStringExtra(EXTRA_PET_AGE);
+            if (intent.hasExtra(EXTRA_PET_GENDER)) gender = intent.getStringExtra(EXTRA_PET_GENDER);
+            if (intent.hasExtra(EXTRA_PET_WEIGHT)) weight = intent.getStringExtra(EXTRA_PET_WEIGHT);
         }
-        viewModel.initPetContext(petId, petName, species);
+        viewModel.initPetContext(petId, petName, species, breed, age, gender, weight);
+    }
+
+    private void fetchDefaultPet() {
+        petRepository.loadPets(new PetRepository.PetsCallback() {
+            @Override
+            public void onSuccess(List<Pet> pets) {
+                if (pets != null && !pets.isEmpty()) {
+                    Pet defaultPet = pets.get(0);
+                    petId = defaultPet.getId();
+                    petName = defaultPet.getName();
+                    species = defaultPet.getSpecies();
+                    breed = defaultPet.getBreed();
+                    age = defaultPet.getAge();
+                    gender = defaultPet.getGender();
+                    weight = defaultPet.getWeight();
+                    viewModel.initPetContext(petId, petName, species, breed, age, gender, weight);
+                    updatePetDisplay();
+                }
+            }
+
+            @Override
+            public void onError(Exception e) {
+                // Handled gracefully in UI
+            }
+        });
+    }
+
+    private void updatePetDisplay() {
+        binding.tvPetContextName.setText(petName);
+        boolean isCat = "Cat".equalsIgnoreCase(species);
+        binding.tvSpeciesEmoji.setText(isCat ? "🐈" : "🐕");
+        String metaLine = species + (breed != null && !breed.isEmpty() ? " · " + breed : "");
+        binding.tvPetContextSpecies.setText(
+                isCat ? "Feline (" + metaLine + ") · Evaluated for feline diagnostics"
+                      : "Canine (" + metaLine + ") · Evaluated for canine diagnostics"
+        );
     }
 
     private void setupViews() {
         binding.btnBack.setOnClickListener(v -> finish());
-
-        // Display pet context
-        binding.tvPetContextName.setText(petName);
-        boolean isCat = "Cat".equalsIgnoreCase(species);
-        binding.tvSpeciesEmoji.setText(isCat ? "🐈" : "🐕");
-        binding.tvPetContextSpecies.setText(
-                isCat ? "Feline · Evaluated for cat diagnostic profiles (e.g., T4, Renal, Glycemia)"
-                      : "Canine · Evaluated for dog diagnostic baselines (e.g., ALT, Creatinine, CBC)"
-        );
+        updatePetDisplay();
 
         binding.cardUploadZone.setOnClickListener(v -> launchFilePicker());
         binding.btnSelectFile.setOnClickListener(v -> launchFilePicker());
@@ -147,6 +195,10 @@ public class LabReportUploadActivity extends AppCompatActivity {
         intent.putExtra(EXTRA_PET_ID, petId);
         intent.putExtra(EXTRA_PET_NAME, petName);
         intent.putExtra(EXTRA_PET_SPECIES, species);
+        intent.putExtra(EXTRA_PET_BREED, breed);
+        intent.putExtra(EXTRA_PET_AGE, age);
+        intent.putExtra(EXTRA_PET_GENDER, gender);
+        intent.putExtra(EXTRA_PET_WEIGHT, weight);
         intent.putExtra("rawText", viewModel.getRawExtractedText().getValue());
         intent.putExtra("fileName", viewModel.getSelectedFileName());
         intent.putExtra("fileMime", viewModel.getSelectedMimeType());
@@ -155,6 +207,15 @@ public class LabReportUploadActivity extends AppCompatActivity {
         }
         if (viewModel.getTestItems().getValue() != null) {
             intent.putExtra("extractedItems", new ArrayList<>(viewModel.getTestItems().getValue()));
+        }
+
+        LabRuleEngine.ReportMetadata meta = viewModel.getReportMetadata().getValue();
+        if (meta != null) {
+            if (meta.labName != null) intent.putExtra("detectedLabName", meta.labName);
+            if (meta.reportDateStr != null) intent.putExtra("detectedReportDate", meta.reportDateStr);
+            if (meta.sampleQualityWarnings != null && !meta.sampleQualityWarnings.isEmpty()) {
+                intent.putStringArrayListExtra("sampleQualityWarnings", new ArrayList<>(meta.sampleQualityWarnings));
+            }
         }
 
         startActivity(intent);

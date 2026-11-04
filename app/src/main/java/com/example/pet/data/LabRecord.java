@@ -24,6 +24,10 @@ public class LabRecord implements Serializable {
     private String petId;
     private String petName;
     private String species;                 // "Dog" or "Cat"
+    private String petBreed;
+    private String petAge;
+    private String petGender;
+    private String petWeight;
     private Date createdAt;
     private Date reportDate;
     private String labName;
@@ -40,6 +44,10 @@ public class LabRecord implements Serializable {
     private String aiSummary;
     private String vetRecommendations;
     private String vetQuestions;            // Useful questions for vet consultation
+    private List<String> precautions = new ArrayList<>();
+    private String veterinaryAttention;     // "Urgent", "Prompt", "Routine"
+    private String veterinaryAttentionDetails;
+    private List<String> sampleQualityWarnings = new ArrayList<>(); // Hemolysis, Lipemia, etc.
     private String disclaimer;
     private List<LabTestItem> tests = new ArrayList<>();
 
@@ -49,23 +57,24 @@ public class LabRecord implements Serializable {
     public LabRecord() {
         this.createdAt = new Date();
         this.disclaimer = DEFAULT_DISCLAIMER;
+        this.precautions = new ArrayList<>();
+        this.sampleQualityWarnings = new ArrayList<>();
+        this.tests = new ArrayList<>();
     }
 
     public LabRecord(String petId, String petName, String species, Date reportDate,
                      String labName, String originalFileUrl, String storagePath,
                      String fileName, String fileType) {
+        this();
         this.petId = petId;
         this.petName = petName;
         this.species = species;
-        this.createdAt = new Date();
         this.reportDate = reportDate != null ? reportDate : new Date();
         this.labName = labName;
         this.originalFileUrl = originalFileUrl;
         this.storagePath = storagePath;
         this.fileName = fileName;
         this.fileType = fileType;
-        this.disclaimer = DEFAULT_DISCLAIMER;
-        this.tests = new ArrayList<>();
     }
 
     // Getters and Setters
@@ -99,6 +108,38 @@ public class LabRecord implements Serializable {
 
     public void setSpecies(String species) {
         this.species = species;
+    }
+
+    public String getPetBreed() {
+        return petBreed;
+    }
+
+    public void setPetBreed(String petBreed) {
+        this.petBreed = petBreed;
+    }
+
+    public String getPetAge() {
+        return petAge;
+    }
+
+    public void setPetAge(String petAge) {
+        this.petAge = petAge;
+    }
+
+    public String getPetGender() {
+        return petGender;
+    }
+
+    public void setPetGender(String petGender) {
+        this.petGender = petGender;
+    }
+
+    public String getPetWeight() {
+        return petWeight;
+    }
+
+    public void setPetWeight(String petWeight) {
+        this.petWeight = petWeight;
     }
 
     public Date getCreatedAt() {
@@ -229,6 +270,38 @@ public class LabRecord implements Serializable {
         this.vetQuestions = vetQuestions;
     }
 
+    public List<String> getPrecautions() {
+        return precautions != null ? precautions : new ArrayList<>();
+    }
+
+    public void setPrecautions(List<String> precautions) {
+        this.precautions = precautions != null ? precautions : new ArrayList<>();
+    }
+
+    public String getVeterinaryAttention() {
+        return veterinaryAttention;
+    }
+
+    public void setVeterinaryAttention(String veterinaryAttention) {
+        this.veterinaryAttention = veterinaryAttention;
+    }
+
+    public String getVeterinaryAttentionDetails() {
+        return veterinaryAttentionDetails;
+    }
+
+    public void setVeterinaryAttentionDetails(String veterinaryAttentionDetails) {
+        this.veterinaryAttentionDetails = veterinaryAttentionDetails;
+    }
+
+    public List<String> getSampleQualityWarnings() {
+        return sampleQualityWarnings != null ? sampleQualityWarnings : new ArrayList<>();
+    }
+
+    public void setSampleQualityWarnings(List<String> sampleQualityWarnings) {
+        this.sampleQualityWarnings = sampleQualityWarnings != null ? sampleQualityWarnings : new ArrayList<>();
+    }
+
     public String getDisclaimer() {
         return disclaimer;
     }
@@ -248,6 +321,7 @@ public class LabRecord implements Serializable {
 
     /**
      * Updates total, abnormal, normal, high, low, and unclassified test metrics.
+     * Sample quality warnings are excluded from normal/abnormal test counts.
      */
     public void recalculateCounts() {
         if (tests == null || tests.isEmpty()) {
@@ -260,7 +334,7 @@ public class LabRecord implements Serializable {
             return;
         }
 
-        totalTestsCount = tests.size();
+        int total = 0;
         int abnormal = 0;
         int normal = 0;
         int high = 0;
@@ -269,6 +343,10 @@ public class LabRecord implements Serializable {
 
         for (LabTestItem item : tests) {
             if (item == null) continue;
+            // Exclude sample-quality warnings from test metrics
+            if (item.isSampleQualityWarning()) continue;
+
+            total++;
             String status = item.getStatus() != null ? item.getStatus() : LabTestItem.STATUS_UNCLASSIFIED;
             if (LabTestItem.STATUS_HIGH.equalsIgnoreCase(status)) {
                 high++;
@@ -283,6 +361,7 @@ public class LabRecord implements Serializable {
             }
         }
 
+        this.totalTestsCount = total;
         this.abnormalCount = abnormal;
         this.normalCount = normal;
         this.highCount = high;

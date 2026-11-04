@@ -1,15 +1,255 @@
 rules_version = '2';
+
+// ===============================================================
+// Assumed Data Model
+// ===============================================================
+//
+// 1. Collection: users/{userId}
+//    Document ID: Firebase Auth UID
+//    Fields: User profile fields (PII protected)
+//    Subcollections:
+//      - pets/{petId} (and recursive pet subcollections: logs, reminders, etc.)
+//      - activityRecords/{recordId}
+//      - behavior_history/{historyId}
+//      - lab_records/{recordId}
+//      - registered_events/{eventId}
+//    Access: Restricted strictly to the authenticated document owner (request.auth.uid == userId).
+//
+// 2. Collection: events/{eventId}
+//    Document ID: Unique event ID (auto-generated)
+//    Fields:
+//      - organizerId: string (required, immutable) - Auth UID of the event creator
+//      - title: string (required, 1-150 chars) - Event title
+//      - description: string (optional, max 5000 chars) - Detailed description
+//      - category: string (optional, max 100 chars) - Event category
+//      - imageUrl: string (optional, max 2000 chars) - Storage URL or image link
+//      - organizerName: string (optional, max 100 chars) - Creator display name
+//      - organizerContact: string (optional, max 100 chars) - Contact email or phone
+//      - organizerVerificationStatus: string (optional, max 50 chars) - Verification status
+//      - venue: string (optional, max 200 chars) - Venue name
+//      - address: string (optional, max 300 chars) - Street address
+//      - city: string (optional, max 100 chars) - City name
+//      - eventFee: string (optional, max 50 chars) - "Free" or fee amount
+//      - eventStatus: string (optional, max 50 chars) - "ACTIVE", "CANCELLED", "COMPLETED"
+//      - startTime: string (optional, max 50 chars) - Start time (e.g., "10:00 AM")
+//      - endTime: string (optional, max 50 chars) - End time (e.g., "01:00 PM")
+//      - registrationCount: number (optional, >= 0) - Currently registered attendee count
+//      - maximumParticipants: number (optional, >= 0) - Capacity limit (0 for unlimited)
+//      - eventDate: number (optional, epoch ms) - Event date timestamp
+//      - registrationDeadline: number (optional, epoch ms) - Registration deadline timestamp
+//      - createdAt: number (optional, epoch ms) - Creation timestamp
+//      - updatedAt: number (optional, epoch ms) - Last update timestamp
+//    Access:
+//      - Read: Any authenticated user can discover events.
+//      - Create: Authenticated user where organizerId == request.auth.uid.
+//      - Update: Organizer can update details (organizerId is immutable); attendees can
+//                update registrationCount and updatedAt via transactions during registration/cancellation.
+//      - Delete: Only the event organizer.
+//
+// 3. Subcollection: events/{eventId}/registrations/{userId}
+//    Document ID: Firebase Auth UID of the registered participant
+//    Fields:
+//      - userId: string (optional/required, immutable, 1-128 chars) - Registrant's Auth UID
+//      - participantName: string (optional, max 150 chars) - Registrant's name
+//      - email: string (optional, max 150 chars) - Registrant's email
+//      - phone: string (optional, max 50 chars) - Contact phone number
+//      - petId: string (optional, max 128 chars) - Associated pet ID
+//      - petName: string (optional, max 100 chars) - Pet name
+//      - petSpecies: string (optional, max 100 chars) - Pet species / breed
+//      - petAge: string (optional, max 50 chars) - Pet age
+//      - additionalNotes: string (optional, max 2000 chars) - Extra instructions / notes
+//      - registrationStatus: string (optional, max 50 chars) - "CONFIRMED" or "CANCELLED"
+//      - eventTitle: string (optional, max 150 chars) - Denormalized event title
+//      - eventVenue: string (optional, max 200 chars) - Denormalized event venue
+//      - eventCity: string (optional, max 100 chars) - Denormalized event city
+//      - eventFee: string (optional, max 50 chars) - Denormalized event fee
+//      - registeredAt: number (optional, epoch ms) - Registration timestamp
+//      - eventDate: number (optional, epoch ms) - Event date timestamp
+//    Access:
+//      - Read: Registrant (request.auth.uid == userId) or the event organizer.
+//      - Create/Update: Only the registrant (request.auth.uid == userId).
+//      - Delete: Registrant or the event organizer.
+//
+// 4. Collection: event_reports/{reportId}
+//    Document ID: Unique report ID (auto-generated)
+//    Fields:
+//      - reportId: string (optional, max 128 chars) - Report identifier
+//      - eventId: string (optional, max 128 chars) - Reported event ID
+//      - eventTitle: string (optional, max 150 chars) - Title of reported event
+//      - reportedByUserId / reporterId: string (required) - Submitter's Auth UID
+//      - reportedByEmail: string (optional, max 150 chars) - Submitter's email
+//      - reason: string (optional, max 200 chars) - Reason for report
+//      - details: string (optional, max 3000 chars) - Additional details
+//      - reportedAt: number (optional, epoch ms) - Report timestamp
+//    Access:
+//      - Create: Authenticated users where reporterId or reportedByUserId matches request.auth.uid.
+//      - Read/Update/Delete: Denied (backend / moderator only).
+//
+// ===============================================================
+
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isValidOptionalString(data, field, minLen, maxLen) {
+      return !(field in data) ||
+        (data[field] is string && data[field].size() >= minLen && data[field].size() <= maxLen);
+    }
+
+    function isValidOptionalNumber(data, field, minVal) {
+      return !(field in data) ||
+        (data[field] is number && data[field] >= minVal);
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+
+    function isValidEvent(data) {
+      return data.organizerId is string && data.organizerId.size() > 0 && data.organizerId.size() <= 128 &&
+             data.title is string && data.title.size() > 0 && data.title.size() <= 150 &&
+             isValidOptionalString(data, 'description', 0, 5000) &&
+             isValidOptionalString(data, 'category', 0, 100) &&
+             isValidOptionalString(data, 'imageUrl', 0, 2000) &&
+             isValidOptionalString(data, 'organizerName', 0, 100) &&
+             isValidOptionalString(data, 'organizerContact', 0, 100) &&
+             isValidOptionalString(data, 'organizerVerificationStatus', 0, 50) &&
+             isValidOptionalString(data, 'venue', 0, 200) &&
+             isValidOptionalString(data, 'address', 0, 300) &&
+             isValidOptionalString(data, 'city', 0, 100) &&
+             isValidOptionalString(data, 'eventFee', 0, 50) &&
+             isValidOptionalString(data, 'eventStatus', 0, 50) &&
+             isValidOptionalString(data, 'startTime', 0, 50) &&
+             isValidOptionalString(data, 'endTime', 0, 50) &&
+             isValidOptionalNumber(data, 'registrationCount', 0) &&
+             isValidOptionalNumber(data, 'maximumParticipants', 0) &&
+             isValidOptionalNumber(data, 'eventDate', 0) &&
+             isValidOptionalNumber(data, 'registrationDeadline', 0) &&
+             isValidOptionalNumber(data, 'createdAt', 0) &&
+             isValidOptionalNumber(data, 'updatedAt', 0);
+    }
+
+    function isValidRegistration(data) {
+      return isValidOptionalString(data, 'userId', 1, 128) &&
+             isValidOptionalString(data, 'participantName', 0, 150) &&
+             isValidOptionalString(data, 'email', 0, 150) &&
+             isValidOptionalString(data, 'phone', 0, 50) &&
+             isValidOptionalString(data, 'petId', 0, 128) &&
+             isValidOptionalString(data, 'petName', 0, 100) &&
+             isValidOptionalString(data, 'petSpecies', 0, 100) &&
+             isValidOptionalString(data, 'petAge', 0, 50) &&
+             isValidOptionalString(data, 'additionalNotes', 0, 2000) &&
+             isValidOptionalString(data, 'registrationStatus', 0, 50) &&
+             isValidOptionalString(data, 'eventTitle', 0, 150) &&
+             isValidOptionalString(data, 'eventVenue', 0, 200) &&
+             isValidOptionalString(data, 'eventCity', 0, 100) &&
+             isValidOptionalString(data, 'eventFee', 0, 50) &&
+             isValidOptionalNumber(data, 'registeredAt', 0) &&
+             isValidOptionalNumber(data, 'eventDate', 0);
+    }
+
+    function isValidReport(data) {
+      return isValidOptionalString(data, 'reason', 0, 200) &&
+             isValidOptionalString(data, 'details', 0, 3000) &&
+             isValidOptionalString(data, 'eventId', 0, 128) &&
+             isValidOptionalString(data, 'eventTitle', 0, 150) &&
+             isValidOptionalString(data, 'reportedByEmail', 0, 150) &&
+             isValidOptionalNumber(data, 'reportedAt', 0);
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
     // User profile document and all subcollections
-    // (pets, activityRecords, behavior_history, lab_records)
+    // (pets, activityRecords, behavior_history, lab_records, registered_events)
     match /users/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
+
+      match /pets/{petId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+
+        match /{petSubcollection=**} {
+          allow read, write: if request.auth != null && request.auth.uid == userId;
+        }
+      }
 
       match /{allSubcollections=**} {
         allow read, write: if request.auth != null && request.auth.uid == userId;
       }
+    }
+
+    // Community & Events feature collections
+    match /events/{eventId} {
+      // All authenticated users can discover events
+      allow read: if isAuthenticated();
+
+      // Only authenticated users can create events, setting themselves as the organizer
+      allow create: if isAuthenticated() &&
+                    request.resource.data.organizerId == request.auth.uid &&
+                    isValidEvent(request.resource.data);
+
+      // Event updates:
+      // 1. Organizer can edit event details (organizerId cannot be transferred)
+      // 2. Authenticated participants can update registrationCount & updatedAt via transactions
+      allow update: if isAuthenticated() && (
+        (resource.data.organizerId == request.auth.uid &&
+         request.resource.data.organizerId == resource.data.organizerId &&
+         isValidEvent(request.resource.data)) ||
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['registrationCount', 'updatedAt']) &&
+         (!('registrationCount' in request.resource.data) ||
+          (request.resource.data.registrationCount is number && request.resource.data.registrationCount >= 0)))
+      );
+
+      // Only the event organizer can delete an event
+      allow delete: if isAuthenticated() && resource.data.organizerId == request.auth.uid;
+
+      // Event registrations subcollection
+      match /registrations/{userId} {
+        // Read: registrant themselves or the event organizer
+        allow read: if isAuthenticated() && (
+          request.auth.uid == userId ||
+          get(/databases/$(database)/documents/events/$(eventId)).data.organizerId == request.auth.uid
+        );
+
+        // Create / Update: registrant matching the userId
+        allow create: if isOwner(userId) &&
+                      (!('userId' in request.resource.data) || request.resource.data.userId == userId) &&
+                      isValidRegistration(request.resource.data);
+
+        allow update: if isOwner(userId) &&
+                      (!('userId' in request.resource.data) || request.resource.data.userId == resource.data.userId) &&
+                      isValidRegistration(request.resource.data);
+
+        // Delete: registrant or the event organizer
+        allow delete: if isAuthenticated() && (
+          request.auth.uid == userId ||
+          get(/databases/$(database)/documents/events/$(eventId)).data.organizerId == request.auth.uid
+        );
+      }
+    }
+
+    // Event reports submitted for moderation
+    match /event_reports/{reportId} {
+      // Authenticated users can submit reports with their auth UID verified
+      allow create: if isAuthenticated() && (
+        ('reporterId' in request.resource.data && request.resource.data.reporterId == request.auth.uid) ||
+        ('reportedByUserId' in request.resource.data && request.resource.data.reportedByUserId == request.auth.uid)
+      ) && isValidReport(request.resource.data);
+
+      // Only backend / moderators can read, update, or delete reports
+      allow read, update, delete: if false;
     }
   }
 }

@@ -10,6 +10,7 @@ import android.text.style.ForegroundColorSpan;
 import android.text.style.StyleSpan;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.PopupMenu;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -20,10 +21,18 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.recyclerview.widget.LinearLayoutManager;
 
+import com.example.pet.data.Event;
+import com.example.pet.data.EventRepository;
 import com.example.pet.data.Pet;
 import com.example.pet.databinding.ActivityMainBinding;
 import com.example.pet.ui.behavior.BehaviorActivity;
+import com.example.pet.ui.community.CreateEventActivity;
+import com.example.pet.ui.community.EventActivity;
+import com.example.pet.ui.community.EventAdapter;
+import com.example.pet.ui.community.EventDetailsActivity;
+import com.example.pet.ui.community.MyEventsActivity;
 import com.example.pet.ui.dashboard.DashboardViewModel;
 import com.example.pet.ui.dashboard.PetPhotoLoader;
 import com.example.pet.ui.dashboard.StatusPill;
@@ -31,12 +40,11 @@ import com.example.pet.ui.health.HealthActivity;
 import com.example.pet.ui.insights.InsightsActivity;
 import com.example.pet.ui.pets.AddPetActivity;
 import com.example.pet.ui.pets.PetSelectorBottomSheet;
-import android.widget.PopupMenu;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 /**
  * Hosts the PetSense dashboard.
- * Preserves existing navigation and adds multi-pet selector support.
+ * Preserves existing navigation, supports multi-pet selector, and handles empty pet states.
  */
 public class MainActivity extends AppCompatActivity {
 
@@ -47,6 +55,9 @@ public class MainActivity extends AppCompatActivity {
     // Behavior banner is rendered from two LiveData values (time + text).
     private String bannerTime = "";
     private String bannerText = "";
+
+    private EventRepository eventRepository;
+    private EventAdapter homeEventAdapter;
 
     private final ActivityResultLauncher<Intent> addPetLauncher =
             registerForActivityResult(
@@ -68,10 +79,6 @@ public class MainActivity extends AppCompatActivity {
         observeViewModel();
     }
 
-    /**
-     * Single bottom-navigation listener. (The previous version registered two listeners; the second one
-     * replaced the first, so this is the behaviour that was actually running, now without the dead copy.)
-     */
     private void setUpBottomNavigation() {
         binding.bottomNavigation.setSelectedItemId(R.id.nav_home);
 
@@ -85,14 +92,14 @@ public class MainActivity extends AppCompatActivity {
 
             else if (id == R.id.nav_health) {
                 Intent healthIntent = new Intent(MainActivity.this, HealthActivity.class);
-                healthIntent.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT); // 🔴 PREVENT BACK-STACK DUPLICATION
+                healthIntent.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
                 startActivity(healthIntent);
                 return true;
             }
 
             else if (id == R.id.nav_behavior) {
                 Intent behaviorIntent = new Intent(MainActivity.this, BehaviorActivity.class);
-                behaviorIntent.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT); // 🔴 PREVENT BACK-STACK DUPLICATION
+                behaviorIntent.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
 
                 Pet bPet = viewModel.getSelectedPet().getValue();
                 if (bPet != null) {
@@ -107,7 +114,7 @@ public class MainActivity extends AppCompatActivity {
 
             else if (id == R.id.nav_insights) {
                 Intent insightsIntent = new Intent(MainActivity.this, InsightsActivity.class);
-                insightsIntent.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT); // 🔴 PREVENT BACK-STACK DUPLICATION
+                insightsIntent.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
 
                 Pet iPet = viewModel.getSelectedPet().getValue();
                 if (iPet != null) {
@@ -128,24 +135,28 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void showDashboard() {
-        binding.dashboardScroll.setVisibility(View.VISIBLE);
-        binding.placeholderContainer.setVisibility(View.GONE);
+        if (viewModel.getSelectedPet().getValue() == null) {
+            binding.emptyPetContainer.setVisibility(View.VISIBLE);
+            binding.dashboardScroll.setVisibility(View.GONE);
+            binding.placeholderContainer.setVisibility(View.GONE);
+        } else {
+            binding.emptyPetContainer.setVisibility(View.GONE);
+            binding.dashboardScroll.setVisibility(View.VISIBLE);
+            binding.placeholderContainer.setVisibility(View.GONE);
+        }
     }
 
     private void showPlaceholder(String title) {
         binding.dashboardScroll.setVisibility(View.GONE);
+        binding.emptyPetContainer.setVisibility(View.GONE);
         binding.placeholderContainer.setVisibility(View.VISIBLE);
         binding.tvPlaceholderTitle.setText(title);
     }
 
-    /**
-     * Called when FLAG_ACTIVITY_REORDER_TO_FRONT brings this Activity to the front instead of
-     * creating a new instance. Store the new intent so onResume() can act on it.
-     */
     @Override
     protected void onNewIntent(@NonNull Intent intent) {
         super.onNewIntent(intent);
-        setIntent(intent); // make getIntent() return the latest intent
+        setIntent(intent);
     }
 
     @Override
@@ -156,26 +167,26 @@ public class MainActivity extends AppCompatActivity {
 
         if (viewModel == null) return;
 
-        // If Profile screen sent back a specific petId (via FLAG_ACTIVITY_REORDER_TO_FRONT),
-        // re-select that pet so the header and avatar stay in sync.
+        // If Onboarding or Profile screen sent a specific petId, select that pet
         Intent current = getIntent();
         if (current != null) {
-            String petIdFromProfile = current.getStringExtra("selected_pet_id");
-            if (petIdFromProfile != null) {
-                viewModel.selectPetById(petIdFromProfile);
-                // Clear the extra so a future plain onResume doesn't re-trigger unnecessarily.
+            String petIdFromIntent = current.getStringExtra("selected_pet_id");
+            if (petIdFromIntent != null) {
+                viewModel.selectPetById(petIdFromIntent);
                 current.removeExtra("selected_pet_id");
             }
         }
 
-        // Always refresh live metrics whenever the user returns to the Dashboard.
+        // Always refresh live metrics whenever returning to Dashboard
         viewModel.refreshCurrentPetActivity();
 
-        // Re-bind avatar in case the photo changed while we were away.
+        // Re-bind avatar in case the photo changed while away
         Pet currentPet = viewModel.getSelectedPet().getValue();
         if (currentPet != null) {
             photoLoader.bind(this, binding.ivPetSelectorAvatar, currentPet.getPhotoUrl());
         }
+
+        loadHomeUpcomingEvents();
     }
 
     @Override
@@ -185,16 +196,19 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void setUpClickListeners() {
-        // Pet name + dropdown caret -> pet selector bottom sheet.
+        // Pet name + dropdown caret -> pet selector bottom sheet
         binding.cardPetSelector.setOnClickListener(v -> openPetSelectorSheet());
 
-        // The avatar keeps the old selector behaviour: open the selected pet's profile.
+        // The avatar opens the selected pet's profile
         binding.ivPetSelectorAvatar.setOnClickListener(v -> openPetProfile());
 
-        // Add-pet button.
+        // Add-pet button in toolbar
         binding.btnAddPet.setOnClickListener(v -> openAddPet());
 
-        // Add-activity shortcut: tap the behavior banner card.
+        // Add-pet button in empty state
+        binding.btnEmptyAddPet.setOnClickListener(v -> openAddPet());
+
+        // Add-activity shortcut: tap the behavior banner card
         binding.cardBehaviorBanner.setOnClickListener(v -> {
             Pet selected = viewModel.getSelectedPet().getValue();
             if (selected != null && selected.getId() != null) {
@@ -203,7 +217,7 @@ public class MainActivity extends AppCompatActivity {
                 intent.putExtra("petId", selected.getId());
                 startActivity(intent);
             } else {
-                Toast.makeText(MainActivity.this, "Please select a pet first",
+                Toast.makeText(MainActivity.this, "Please select or add a pet first",
                         Toast.LENGTH_SHORT).show();
             }
         });
@@ -244,6 +258,79 @@ public class MainActivity extends AppCompatActivity {
             });
             popup.show();
         });
+
+        setUpCommunityEventsSection();
+    }
+
+    private void setUpCommunityEventsSection() {
+        eventRepository = new EventRepository();
+
+        binding.btnHomeViewAllEvents.setOnClickListener(v -> {
+            Intent intent = new Intent(MainActivity.this, EventActivity.class);
+            startActivity(intent);
+        });
+
+        binding.btnHomeCreateEvent.setOnClickListener(v -> {
+            Intent intent = new Intent(MainActivity.this, CreateEventActivity.class);
+            startActivity(intent);
+        });
+
+        binding.btnHomeMyEvents.setOnClickListener(v -> {
+            Intent intent = new Intent(MainActivity.this, MyEventsActivity.class);
+            startActivity(intent);
+        });
+
+        // Category shortcuts
+        binding.chipHomeVaccination.setOnClickListener(v -> openCategory(Event.CATEGORY_VACCINATION));
+        binding.chipHomeMeetups.setOnClickListener(v -> openCategory(Event.CATEGORY_MEETUP));
+        binding.chipHomeWorkshops.setOnClickListener(v -> openCategory(Event.CATEGORY_TRAINING));
+        binding.chipHomeHealth.setOnClickListener(v -> openCategory(Event.CATEGORY_HEALTH_CHECKUP));
+        binding.chipHomeAdoption.setOnClickListener(v -> openCategory(Event.CATEGORY_ADOPTION));
+        binding.chipHomeAwareness.setOnClickListener(v -> openCategory(Event.CATEGORY_AWARENESS));
+
+        // Horizontal Carousel
+        homeEventAdapter = new EventAdapter(true, event -> {
+            Intent intent = new Intent(MainActivity.this, EventDetailsActivity.class);
+            intent.putExtra(EventDetailsActivity.EXTRA_EVENT_ID, event.getEventId());
+            startActivity(intent);
+        });
+        binding.rvHomeUpcomingEvents.setLayoutManager(
+                new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
+        binding.rvHomeUpcomingEvents.setAdapter(homeEventAdapter);
+    }
+
+    private void openCategory(String category) {
+        Intent intent = new Intent(MainActivity.this, EventActivity.class);
+        intent.putExtra(EventActivity.EXTRA_INITIAL_CATEGORY, category);
+        startActivity(intent);
+    }
+
+    private void loadHomeUpcomingEvents() {
+        if (eventRepository == null) {
+            eventRepository = new EventRepository();
+        }
+        binding.pbHomeEventsLoading.setVisibility(View.VISIBLE);
+        eventRepository.getUpcomingEvents(new EventRepository.EventCallback<java.util.List<Event>>() {
+            @Override
+            public void onSuccess(java.util.List<Event> events) {
+                binding.pbHomeEventsLoading.setVisibility(View.GONE);
+                if (events == null || events.isEmpty()) {
+                    binding.rvHomeUpcomingEvents.setVisibility(View.GONE);
+                    binding.layoutHomeEventsEmpty.setVisibility(View.VISIBLE);
+                } else {
+                    binding.layoutHomeEventsEmpty.setVisibility(View.GONE);
+                    binding.rvHomeUpcomingEvents.setVisibility(View.VISIBLE);
+                    homeEventAdapter.setEvents(events);
+                }
+            }
+
+            @Override
+            public void onError(Exception e) {
+                binding.pbHomeEventsLoading.setVisibility(View.GONE);
+                binding.rvHomeUpcomingEvents.setVisibility(View.GONE);
+                binding.layoutHomeEventsEmpty.setVisibility(View.VISIBLE);
+            }
+        });
     }
 
     private final ActivityResultLauncher<Intent> petProfileLauncher =
@@ -251,7 +338,6 @@ public class MainActivity extends AppCompatActivity {
                     new ActivityResultContracts.StartActivityForResult(),
                     result -> {
                         if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
-                            // Pet was updated! The simplest way is to extract it and update
                             Intent data = result.getData();
                             Pet updated = new Pet(
                                     data.getStringExtra(AddPetActivity.EXTRA_PET_NAME),
@@ -271,7 +357,10 @@ public class MainActivity extends AppCompatActivity {
 
     private void openPetProfile() {
         Pet selected = viewModel.getSelectedPet().getValue();
-        if (selected == null) return;
+        if (selected == null) {
+            Toast.makeText(this, "Please add a pet first", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
         Intent intent = new Intent(this, PetProfileActivity.class);
         intent.putExtra("id", selected.getId());
@@ -309,19 +398,27 @@ public class MainActivity extends AppCompatActivity {
         String breed = data.getStringExtra(AddPetActivity.EXTRA_PET_BREED);
         String age = data.getStringExtra(AddPetActivity.EXTRA_PET_AGE);
         String notes = data.getStringExtra(AddPetActivity.EXTRA_PET_NOTES);
-
         String weight = data.getStringExtra(AddPetActivity.EXTRA_PET_WEIGHT);
         String photoUrl = data.getStringExtra(AddPetActivity.EXTRA_PET_PHOTO_URL);
+        String petId = data.getStringExtra("id");
 
         Pet newPet = new Pet(name, species, breed, age, notes, true, weight, photoUrl);
 
-        viewModel.addPet(newPet, () ->
-                Toast.makeText(
-                        this,
-                        name + " added",
-                        Toast.LENGTH_SHORT
-                ).show()
-        );
+        if (petId != null && !petId.isEmpty()) {
+            newPet.setId(petId);
+            // Already saved to Firestore in AddPetActivity, update local state directly
+            viewModel.addPetLocallyOnly(newPet);
+            Toast.makeText(this, name + " added", Toast.LENGTH_SHORT).show();
+        } else {
+            // Fallback for legacy flows
+            viewModel.addPet(newPet, () ->
+                    Toast.makeText(
+                            this,
+                            name + " added",
+                            Toast.LENGTH_SHORT
+                    ).show()
+            );
+        }
     }
 
     private void observeViewModel() {
@@ -332,29 +429,42 @@ public class MainActivity extends AppCompatActivity {
         );
 
         viewModel.getPetName().observe(this, petName -> {
-            binding.tvGreetingSubtitle.setText(
-                    getString(R.string.ps_dashboard_subtitle, petName)
-            );
-            binding.tvPetSelectorName.setText(petName);
-            binding.ivPetSelectorAvatar.setContentDescription(
-                    getString(R.string.ps_cd_pet_card_photo_format, petName)
-            );
+            if (petName != null && !petName.isEmpty()) {
+                binding.tvGreetingSubtitle.setText(
+                        getString(R.string.ps_dashboard_subtitle, petName)
+                );
+                binding.tvPetSelectorName.setText(petName);
+                binding.ivPetSelectorAvatar.setContentDescription(
+                        getString(R.string.ps_cd_pet_card_photo_format, petName)
+                );
+            } else {
+                binding.tvGreetingSubtitle.setText("Welcome to PetSense");
+                binding.tvPetSelectorName.setText("No Pet Selected");
+            }
         });
 
         viewModel.getPetBreedAge().observe(this, breedAge ->
-                binding.tvPetSelectorMeta.setText(breedAge)
+                binding.tvPetSelectorMeta.setText(breedAge != null ? breedAge : "")
         );
 
-        // Avatar photo for the selected pet (placeholder when the pet has none).
-        viewModel.getSelectedPet().observe(this, pet ->
-                photoLoader.bind(this, binding.ivPetSelectorAvatar,
-                        pet != null ? pet.getPhotoUrl() : null)
-        );
+        // Avatar photo and visibility toggle for the selected pet
+        viewModel.getSelectedPet().observe(this, pet -> {
+            if (pet == null) {
+                binding.emptyPetContainer.setVisibility(View.VISIBLE);
+                binding.dashboardScroll.setVisibility(View.GONE);
+                binding.placeholderContainer.setVisibility(View.GONE);
+            } else {
+                binding.emptyPetContainer.setVisibility(View.GONE);
+                if (binding.placeholderContainer.getVisibility() != View.VISIBLE) {
+                    binding.dashboardScroll.setVisibility(View.VISIBLE);
+                }
+                photoLoader.bind(this, binding.ivPetSelectorAvatar, pet.getPhotoUrl());
+            }
+        });
 
         // ----- Health score card -----
         viewModel.getHealthScore().observe(this, score -> {
             String status = viewModel.getHealthStatus().getValue();
-
             binding.healthScoreView.setScore(score, status);
             binding.tvHealthScoreValue.setText(String.valueOf(score));
         });
@@ -463,6 +573,3 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 }
-
-
-

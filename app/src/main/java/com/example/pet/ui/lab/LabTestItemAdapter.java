@@ -79,6 +79,10 @@ public class LabTestItemAdapter extends RecyclerView.Adapter<LabTestItemAdapter.
         private final TextView tvToggleExplanation;
         private final View layoutAiExplanation;
         private final TextView tvAiExplanation;
+        private final TextView lblSignificance;
+        private final TextView tvClinicalSignificance;
+        private final TextView lblFollowUp;
+        private final TextView tvRecommendedFollowUp;
 
         ViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -91,6 +95,10 @@ public class LabTestItemAdapter extends RecyclerView.Adapter<LabTestItemAdapter.
             tvToggleExplanation = itemView.findViewById(R.id.tvToggleExplanation);
             layoutAiExplanation = itemView.findViewById(R.id.layoutAiExplanation);
             tvAiExplanation = itemView.findViewById(R.id.tvAiExplanation);
+            lblSignificance = itemView.findViewById(R.id.lblSignificance);
+            tvClinicalSignificance = itemView.findViewById(R.id.tvClinicalSignificance);
+            lblFollowUp = itemView.findViewById(R.id.lblFollowUp);
+            tvRecommendedFollowUp = itemView.findViewById(R.id.tvRecommendedFollowUp);
         }
 
         void bind(LabTestItem item) {
@@ -126,10 +134,41 @@ public class LabTestItemAdapter extends RecyclerView.Adapter<LabTestItemAdapter.
                 tvStatusPill.setBackgroundTintList(ContextCompat.getColorStateList(itemView.getContext(), R.color.pd_gray_bg));
             }
 
-            // Expandable AI Explanation
+            // Expandable AI Explanation & Clinical Significance
             String explanation = item.getAiExplanation();
-            if (explanation != null && !explanation.trim().isEmpty()) {
-                tvAiExplanation.setText(explanation);
+            String significance = item.getClinicalSignificance();
+            String followUp = item.getRecommendedFollowUp();
+
+            boolean hasAiContent = (explanation != null && !explanation.trim().isEmpty())
+                    || (significance != null && !significance.trim().isEmpty())
+                    || (followUp != null && !followUp.trim().isEmpty());
+
+            if (hasAiContent) {
+                if (explanation != null && !explanation.trim().isEmpty()) {
+                    tvAiExplanation.setText(explanation);
+                    tvAiExplanation.setVisibility(View.VISIBLE);
+                } else {
+                    tvAiExplanation.setVisibility(View.GONE);
+                }
+
+                if (significance != null && !significance.trim().isEmpty()) {
+                    tvClinicalSignificance.setText(significance);
+                    lblSignificance.setVisibility(View.VISIBLE);
+                    tvClinicalSignificance.setVisibility(View.VISIBLE);
+                } else {
+                    lblSignificance.setVisibility(View.GONE);
+                    tvClinicalSignificance.setVisibility(View.GONE);
+                }
+
+                if (followUp != null && !followUp.trim().isEmpty()) {
+                    tvRecommendedFollowUp.setText(followUp);
+                    lblFollowUp.setVisibility(View.VISIBLE);
+                    tvRecommendedFollowUp.setVisibility(View.VISIBLE);
+                } else {
+                    lblFollowUp.setVisibility(View.GONE);
+                    tvRecommendedFollowUp.setVisibility(View.GONE);
+                }
+
                 tvToggleExplanation.setVisibility(View.VISIBLE);
 
                 // Auto-expand abnormal items by default, keep normal collapsed

@@ -1,0 +1,253 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/cardReminder"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginHorizontal="16dp"
+    android:layout_marginVertical="6dp"
+    app:cardBackgroundColor="@color/ps_surface"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="0dp"
+    app:strokeColor="@color/pd_card_stroke"
+    app:strokeWidth="1dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- TOP ROW: Category Icon, Title, Pet Badge & Status Pill -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <!-- Category Icon Bubble -->
+            <FrameLayout
+                android:id="@+id/categoryIconBg"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:background="@drawable/ps_bg_bubble_purple">
+
+                <ImageView
+                    android:id="@+id/ivCategoryIcon"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_gravity="center"
+                    android:src="@drawable/ic_reminder_vaccine"
+                    app:tint="@color/ps_primary" />
+            </FrameLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/tvReminderTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/pd_text_primary"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    tools:text="Rabies Vaccine Booster" />
+
+                <!-- Badges row: Pet name + Category + Repeat -->
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <!-- Pet Badge -->
+                    <TextView
+                        android:id="@+id/tvPetBadge"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/ps_bg_badge_lavender"
+                        android:paddingHorizontal="8dp"
+                        android:paddingVertical="2dp"
+                        android:textColor="@color/ps_primary"
+                        android:textSize="11sp"
+                        android:textStyle="bold"
+                        tools:text="Luna" />
+
+                    <!-- Category Pill -->
+                    <TextView
+                        android:id="@+id/tvCategoryBadge"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="6dp"
+                        android:background="@drawable/ps_bg_badge_gray"
+                        android:paddingHorizontal="8dp"
+                        android:paddingVertical="2dp"
+                        android:textColor="@color/pd_text_muted"
+                        android:textSize="11sp"
+                        tools:text="Vaccination" />
+
+                    <!-- Repeat Badge -->
+                    <TextView
+                        android:id="@+id/tvRepeatBadge"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="6dp"
+                        android:background="@drawable/ps_bg_badge_gray"
+                        android:paddingHorizontal="8dp"
+                        android:paddingVertical="2dp"
+                        android:textColor="@color/pd_text_muted"
+                        android:textSize="11sp"
+                        android:visibility="gone"
+                        tools:text="Monthly" />
+                </LinearLayout>
+
+            </LinearLayout>
+
+            <!-- Status Pill -->
+            <TextView
+                android:id="@+id/tvStatusPill"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:background="@drawable/ps_bg_pill_upcoming"
+                android:paddingHorizontal="10dp"
+                android:paddingVertical="4dp"
+                android:textColor="@color/pd_primary"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                tools:text="Upcoming" />
+
+        </LinearLayout>
+
+        <!-- DATE & TIME + ADVANCE NOTICE -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:src="@drawable/ic_reminder_calendar"
+                app:tint="@color/pd_text_muted" />
+
+            <TextView
+                android:id="@+id/tvDateTime"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:layout_weight="1"
+                android:textColor="@color/pd_text_primary"
+                android:textSize="13sp"
+                tools:text="Nov 15, 2026 · 10:00 AM" />
+
+            <TextView
+                android:id="@+id/tvAdvanceNotice"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/pd_text_muted"
+                android:textSize="12sp"
+                android:visibility="gone"
+                tools:text="Alert: 1 day before" />
+        </LinearLayout>
+
+        <!-- DESCRIPTION / MEDICATION INFO -->
+        <TextView
+            android:id="@+id/tvDescription"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:textColor="@color/pd_text_muted"
+            android:textSize="13sp"
+            android:visibility="gone"
+            tools:text="Administer with food. 1 tablet daily." />
+
+        <!-- DIVIDER -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginTop="12dp"
+            android:layout_marginBottom="8dp"
+            android:background="@color/pd_divider" />
+
+        <!-- BOTTOM ACTIONS ROW: Mark Complete, Snooze, Toggle Enabled, More -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <!-- Mark Complete Button -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnMarkComplete"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="wrap_content"
+                android:layout_height="36dp"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:minWidth="0dp"
+                android:paddingHorizontal="12dp"
+                android:text="Complete"
+                android:textColor="@color/pd_green_text"
+                android:textSize="12sp"
+                app:backgroundTint="@color/pd_green_bg"
+                app:cornerRadius="18dp"
+                app:icon="@drawable/ic_ps_check"
+                app:iconSize="14dp"
+                app:iconTint="@color/pd_green_text" />
+
+            <!-- Snooze Button -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnSnooze"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="wrap_content"
+                android:layout_height="36dp"
+                android:layout_marginStart="8dp"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:minWidth="0dp"
+                android:paddingHorizontal="12dp"
+                android:text="Snooze 1h"
+                android:textColor="@color/pd_amber_button"
+                android:textSize="12sp"
+                app:backgroundTint="@color/pd_amber_bg"
+                app:cornerRadius="18dp"
+                app:icon="@drawable/ic_ps_refresh"
+                app:iconSize="14dp"
+                app:iconTint="@color/pd_amber_button" />
+
+            <View
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1" />
+
+            <!-- Enable/Disable Switch -->
+            <com.google.android.material.materialswitch.MaterialSwitch
+                android:id="@+id/switchEnabled"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checked="true" />
+
+            <!-- More Options Menu -->
+            <ImageButton
+                android:id="@+id/btnMoreOptions"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="More options"
+                android:src="@drawable/ic_ps_more_vert"
+                app:tint="@color/pd_text_muted" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</com.google.android.material.card.MaterialCardView>
