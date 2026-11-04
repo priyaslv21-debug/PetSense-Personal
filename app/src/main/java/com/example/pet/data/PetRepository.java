@@ -1,5 +1,7 @@
 package com.example.pet.data;
 
+import android.util.Log;
+
 import androidx.annotation.NonNull;
 
 import com.google.android.gms.tasks.OnFailureListener;
@@ -17,28 +19,10 @@ import java.util.List;
 /**
  * Persists pet profiles to Cloud Firestore, under:
  *   users/{uid}/pets/{petId}
- *
- * SETUP THIS REPO ASSUMES (check these against your project before relying on it):
- *  1. The Firebase Firestore Android SDK is added in your app-level build.gradle:
- *       implementation platform('com.google.firebase:firebase-bom:33.1.0')
- *       implementation 'com.google.firebase:firebase-firestore'
- *       implementation 'com.google.firebase:firebase-auth'
- *     If your project only has Firebase Authentication set up (which the presence of
- *     AuthRepository/AuthViewModel suggests) and not Firestore, add the Firestore
- *     dependency and re-sync Gradle before this class will compile/run.
- *  2. A signed-in FirebaseAuth user exists (your existing LoginActivity flow) — pets are
- *     scoped per-user via FirebaseAuth.getInstance().getCurrentUser().getUid().
- *  3. Firestore security rules allow a signed-in user to read/write their own
- *     users/{uid}/pets subcollection, e.g.:
- *       match /users/{uid}/pets/{petId} {
- *         allow read, write: if request.auth != null && request.auth.uid == uid;
- *       }
- *
- * If Firestore isn't wired up yet in your project, do NOT delete this class — instead
- * treat DashboardViewModel's in-memory pet list as the working demo data source until
- * you add the dependency above, then flip DashboardViewModel to call this repository.
  */
 public class PetRepository {
+
+    private static final String TAG = "PetRepository";
 
     private FirebaseFirestore firestore;
     private FirebaseAuth auth;
@@ -48,7 +32,7 @@ public class PetRepository {
             firestore = FirebaseFirestore.getInstance();
             auth = FirebaseAuth.getInstance();
         } catch (Exception e) {
-            // Log or hold null if GMS / Firebase initialization encounters issues
+            Log.e(TAG, "Initialization error in PetRepository", e);
         }
     }
 
@@ -84,14 +68,27 @@ public class PetRepository {
     private String currentUid() {
         FirebaseAuth a = getAuth();
         if (a == null || a.getCurrentUser() == null) {
-            throw new IllegalStateException(
-                    "PetRepository used with no signed-in user — call this after your existing login flow completes.");
+            String errorMsg = "PetRepository: No signed-in Firebase user when accessing pet repository.";
+            Log.e(TAG, errorMsg);
+            throw new IllegalStateException(errorMsg);
         }
         return a.getCurrentUser().getUid();
     }
 
     public void loadPets(@NonNull PetsCallback callback) {
         try {
+            FirebaseAuth a = getAuth();
+            if (a == null || a.getCurrentUser() == null) {
+                String errorMsg = "PetRepository: No signed-in Firebase user when attempting to load pets.";
+                Log.e(TAG, errorMsg);
+                callback.onError(new IllegalStateException(errorMsg));
+                return;
+            }
+
+            String uid = a.getCurrentUser().getUid();
+            Log.i(TAG, "Authenticated Firebase UID for loadPets: " + uid);
+            Log.i(TAG, "Target Firestore read path: users/" + uid + "/pets");
+
             petsCollection().get()
                     .addOnSuccessListener(new OnSuccessListener<QuerySnapshot>() {
                         @Override
@@ -102,42 +99,89 @@ public class PetRepository {
                                 pet.setId(doc.getId());
                                 pets.add(pet);
                             });
+                            Log.i(TAG, "Loaded " + pets.size() + " pets from Firestore for UID: " + uid);
                             callback.onSuccess(pets);
                         }
                     })
                     .addOnFailureListener(new OnFailureListener() {
                         @Override
                         public void onFailure(@NonNull Exception e) {
+                            Log.e(TAG, "Firestore read failed at users/" + uid + "/pets for UID: " + uid, e);
                             callback.onError(e);
                         }
                     });
         } catch (Exception e) {
+            Log.e(TAG, "Unexpected exception in loadPets", e);
             callback.onError(e);
         }
     }
 
     public void addPet(@NonNull Pet pet, @NonNull SavePetCallback callback) {
         try {
+            FirebaseAuth a = getAuth();
+            if (a == null || a.getCurrentUser() == null) {
+                String errorMsg = "PetRepository: No signed-in Firebase user when attempting to add pet.";
+                Log.e(TAG, errorMsg);
+                callback.onError(new IllegalStateException(errorMsg));
+                return;
+            }
+
+            String uid = a.getCurrentUser().getUid();
+            Log.i(TAG, "Authenticated Firebase UID for addPet: " + uid);
+
             DocumentReference ref = petsCollection().document(); // pre-generates an id
             pet.setId(ref.getId());
+
+            String path = "users/" + uid + "/pets/" + pet.getId();
+            Log.i(TAG, "Target Firestore write path: " + path);
+
             ref.set(pet)
-                    .addOnSuccessListener(unused -> callback.onSuccess(pet))
-                    .addOnFailureListener(callback::onError);
+                    .addOnSuccessListener(unused -> {
+                        Log.i(TAG, "Successfully persisted pet profile to Firestore at path: " + path);
+                        callback.onSuccess(pet);
+                    })
+                    .addOnFailureListener(e -> {
+                        Log.e(TAG, "Firestore write failed at path: " + path + " for UID: " + uid, e);
+                        callback.onError(e);
+                    });
         } catch (Exception e) {
+            Log.e(TAG, "Unexpected exception in addPet", e);
             callback.onError(e);
         }
     }
 
     public void updatePet(@NonNull Pet pet, @NonNull SavePetCallback callback) {
         try {
+            FirebaseAuth a = getAuth();
+            if (a == null || a.getCurrentUser() == null) {
+                String errorMsg = "PetRepository: No signed-in Firebase user when attempting to update pet.";
+                Log.e(TAG, errorMsg);
+                callback.onError(new IllegalStateException(errorMsg));
+                return;
+            }
+
+            String uid = a.getCurrentUser().getUid();
+            Log.i(TAG, "Authenticated Firebase UID for updatePet: " + uid);
+
             if (pet.getId() == null) {
                 addPet(pet, callback);
                 return;
             }
+
+            String path = "users/" + uid + "/pets/" + pet.getId();
+            Log.i(TAG, "Target Firestore update path: " + path);
+
             petsCollection().document(pet.getId()).set(pet)
-                    .addOnSuccessListener(unused -> callback.onSuccess(pet))
-                    .addOnFailureListener(callback::onError);
+                    .addOnSuccessListener(unused -> {
+                        Log.i(TAG, "Successfully updated pet profile at path: " + path);
+                        callback.onSuccess(pet);
+                    })
+                    .addOnFailureListener(e -> {
+                        Log.e(TAG, "Firestore update failed at path: " + path + " for UID: " + uid, e);
+                        callback.onError(e);
+                    });
         } catch (Exception e) {
+            Log.e(TAG, "Unexpected exception in updatePet", e);
             callback.onError(e);
         }
     }

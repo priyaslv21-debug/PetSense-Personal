@@ -22,7 +22,8 @@ import java.util.List;
 
 /**
  * Adapter powering the interactive OCR Verification Screen.
- * Allows users to review, edit, add, or delete test parameters.
+ * Allows users to review, edit, add, or delete test parameters,
+ * and highlights uncertain OCR extractions.
  */
 public class LabOcrEditAdapter extends RecyclerView.Adapter<LabOcrEditAdapter.ViewHolder> {
 
@@ -83,6 +84,8 @@ public class LabOcrEditAdapter extends RecyclerView.Adapter<LabOcrEditAdapter.Vi
         private final TextInputEditText etTestRange;
         private final TextView tvRowStatusBadge;
         private final ImageButton btnDeleteRow;
+        private final View layoutUncertainWarning;
+        private final TextView tvUncertainReason;
 
         private TextWatcher nameWatcher;
         private TextWatcher valueWatcher;
@@ -97,6 +100,8 @@ public class LabOcrEditAdapter extends RecyclerView.Adapter<LabOcrEditAdapter.Vi
             etTestRange = itemView.findViewById(R.id.etTestRange);
             tvRowStatusBadge = itemView.findViewById(R.id.tvRowStatusBadge);
             btnDeleteRow = itemView.findViewById(R.id.btnDeleteRow);
+            layoutUncertainWarning = itemView.findViewById(R.id.layoutUncertainWarning);
+            tvUncertainReason = itemView.findViewById(R.id.tvUncertainReason);
         }
 
         void bind(LabTestItem item, View.OnClickListener onDeleteClick) {
@@ -112,12 +117,15 @@ public class LabOcrEditAdapter extends RecyclerView.Adapter<LabOcrEditAdapter.Vi
             etTestRange.setText(item.getRefRangeText());
 
             updateStatusBadge(item);
+            updateUncertainWarning(item);
 
             btnDeleteRow.setOnClickListener(onDeleteClick);
 
             nameWatcher = new SimpleTextWatcher(text -> {
                 item.setTestName(text);
                 item.setCategory(LabRuleEngine.inferCategory(text));
+                item.setUncertain(false);
+                updateUncertainWarning(item);
             });
             valueWatcher = new SimpleTextWatcher(text -> {
                 item.setValue(text);
@@ -127,19 +135,41 @@ public class LabOcrEditAdapter extends RecyclerView.Adapter<LabOcrEditAdapter.Vi
                     item.setNumericValue(null);
                 }
                 LabRuleEngine.classifyTestItem(item);
+                item.setUncertain(false);
                 updateStatusBadge(item);
+                updateUncertainWarning(item);
             });
-            unitWatcher = new SimpleTextWatcher(item::setUnit);
+            unitWatcher = new SimpleTextWatcher(text -> {
+                item.setUnit(text);
+                item.setUncertain(false);
+                updateUncertainWarning(item);
+            });
             rangeWatcher = new SimpleTextWatcher(text -> {
                 item.setRefRangeText(text);
                 LabRuleEngine.classifyTestItem(item);
+                item.setUncertain(false);
                 updateStatusBadge(item);
+                updateUncertainWarning(item);
             });
 
             etTestName.addTextChangedListener(nameWatcher);
             etTestValue.addTextChangedListener(valueWatcher);
             etTestUnit.addTextChangedListener(unitWatcher);
             etTestRange.addTextChangedListener(rangeWatcher);
+        }
+
+        private void updateUncertainWarning(LabTestItem item) {
+            if (layoutUncertainWarning != null) {
+                if (item.isUncertain()) {
+                    layoutUncertainWarning.setVisibility(View.VISIBLE);
+                    if (tvUncertainReason != null) {
+                        String r = item.getUncertainReason();
+                        tvUncertainReason.setText(r != null && !r.isEmpty() ? r : "Uncertain extraction. Please review.");
+                    }
+                } else {
+                    layoutUncertainWarning.setVisibility(View.GONE);
+                }
+            }
         }
 
         private void updateStatusBadge(LabTestItem item) {

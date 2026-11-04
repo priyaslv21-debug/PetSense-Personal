@@ -9,6 +9,9 @@ import androidx.lifecycle.ViewModel;
 import com.example.pet.data.ActivityRecord;
 import com.example.pet.data.Pet;
 import com.example.pet.data.PetRepository;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -20,11 +23,9 @@ import java.util.Locale;
 /**
  * Holds dashboard state and supports switching between pets.
  *
- * Existing public API is unchanged. Added LiveData for the redesigned dashboard:
- * sleep/activity/feeding subtitles, water status/percent, health-score delta, last-updated time and the
- * behavior banner (time + text). All of the new values derived from Firestore come from the latest
- * ActivityRecord; defaults for values that have no data source yet (water, care reminder, user name,
- * demo pet) are the ones that were already in this class.
+ * Fetches the authenticated user's pet profiles from Firestore.
+ * Automatically selects the newly created or preferred pet.
+ * If the user has no pets, displays a clean empty state.
  */
 public class DashboardViewModel extends ViewModel {
 
@@ -40,7 +41,7 @@ public class DashboardViewModel extends ViewModel {
     private final MutableLiveData<String> waterStatus = new MutableLiveData<>("Normal");
     private final MutableLiveData<Integer> waterPercent = new MutableLiveData<>(90);
 
-    // Tile sub-labels (defaults = the reference text; replaced by values derived from the latest record)
+    // Tile sub-labels (defaults = reference text; replaced by values derived from the latest record)
     private final MutableLiveData<String> sleepSubtitle = new MutableLiveData<>("Optimal rest cycle");
     private final MutableLiveData<String> activitySubtitle = new MutableLiveData<>("Light indoor walk");
     private final MutableLiveData<String> feedingSubtitle = new MutableLiveData<>("Evening snack left");
@@ -68,7 +69,7 @@ public class DashboardViewModel extends ViewModel {
 
     private final PetRepository petRepository = new PetRepository();
 
-    private final MutableLiveData<String> userName = new MutableLiveData<>("Sarah");
+    private final MutableLiveData<String> userName = new MutableLiveData<>("Pet Parent");
 
     // Multi-pet state
     private final MutableLiveData<List<Pet>> pets =
@@ -76,62 +77,111 @@ public class DashboardViewModel extends ViewModel {
     private final MutableLiveData<Pet> selectedPet = new MutableLiveData<>();
 
     // Existing dashboard pet fields, updated when the selected pet changes
-    private final MutableLiveData<String> petName = new MutableLiveData<>("Max");
+    private final MutableLiveData<String> petName = new MutableLiveData<>("");
     private final MutableLiveData<String> petBreedAge =
-            new MutableLiveData<>("Golden Retriever · 2 Years");
+            new MutableLiveData<>("");
     private final MutableLiveData<Boolean> petIsMale = new MutableLiveData<>(true);
 
-    private final MutableLiveData<Integer> healthScore = new MutableLiveData<>(86);
-    private final MutableLiveData<String> healthStatus = new MutableLiveData<>("Good");
+    private final MutableLiveData<Integer> healthScore = new MutableLiveData<>(0);
+    private final MutableLiveData<String> healthStatus = new MutableLiveData<>("No data");
 
-    private final MutableLiveData<String> sleepValue = new MutableLiveData<>("8h 20m");
-    private final MutableLiveData<String> activityValue = new MutableLiveData<>("2h 45m");
-    private final MutableLiveData<String> feedingValue = new MutableLiveData<>("2 / 2 meals");
+    private final MutableLiveData<String> sleepValue = new MutableLiveData<>("No data");
+    private final MutableLiveData<String> activityValue = new MutableLiveData<>("No data");
+    private final MutableLiveData<String> feedingValue = new MutableLiveData<>("No data");
     private final MutableLiveData<String> waterValue = new MutableLiveData<>("1.8 L");
 
     private final MutableLiveData<String> careReminderDetail =
             new MutableLiveData<>("Next preventive task · in 3 weeks");
 
-    // Kept from your original ViewModel
     private final MutableLiveData<String> healthInsight =
             new MutableLiveData<>(
-                    "Max is maintaining a healthy activity and sleep pattern today."
+                    "Register your pet to see personalized health and activity insights."
             );
 
     public DashboardViewModel() {
-        // Demo pet for the dashboard before/without Firestore data
-        Pet demoPet = new Pet(
-                "Max", "Dog", "Golden Retriever", "2 Years", null, true, "24 kg", null
-        );
-
-        List<Pet> initialPets = new ArrayList<>();
-        initialPets.add(demoPet);
-        pets.setValue(initialPets);
-        selectPet(demoPet);
-
-        refreshPetsFromRepository();
+        resolveUserName();
+        refreshPetsFromRepository(null);
     }
 
-    private void refreshPetsFromRepository() {
+    public void resolveUserName() {
+        try {
+            FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+            if (user != null) {
+                if (user.getDisplayName() != null && !user.getDisplayName().trim().isEmpty()) {
+                    userName.setValue(user.getDisplayName().trim());
+                    return;
+                }
+                FirebaseFirestore.getInstance().collection("users").document(user.getUid())
+                        .get().addOnSuccessListener(snapshot -> {
+                            if (snapshot != null && snapshot.exists()) {
+                                String name = snapshot.getString("displayName");
+                                if (name != null && !name.trim().isEmpty()) {
+                                    userName.setValue(name.trim());
+                                }
+                            }
+                        });
+            } else {
+                userName.setValue("Pet Parent");
+            }
+        } catch (Exception e) {
+            userName.setValue("Pet Parent");
+        }
+    }
+
+    public void refreshPetsFromRepository() {
+        refreshPetsFromRepository(null);
+    }
+
+    public void refreshPetsFromRepository(@Nullable String preferredPetId) {
+        resolveUserName();
         try {
             petRepository.loadPets(new PetRepository.PetsCallback() {
                 @Override
                 public void onSuccess(List<Pet> loadedPets) {
                     if (loadedPets == null || loadedPets.isEmpty()) {
+                        pets.setValue(new ArrayList<>());
+                        selectPet(null);
                         return;
                     }
 
                     pets.setValue(loadedPets);
-                    selectPet(loadedPets.get(0));
+
+                    Pet toSelect = null;
+                    if (preferredPetId != null) {
+                        for (Pet p : loadedPets) {
+                            if (preferredPetId.equals(p.getId())) {
+                                toSelect = p;
+                                break;
+                            }
+                        }
+                    }
+                    if (toSelect == null) {
+                        Pet current = selectedPet.getValue();
+                        if (current != null && current.getId() != null) {
+                            for (Pet p : loadedPets) {
+                                if (current.getId().equals(p.getId())) {
+                                    toSelect = p;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    if (toSelect == null) {
+                        toSelect = loadedPets.get(0);
+                    }
+                    selectPet(toSelect);
                 }
 
                 @Override
                 public void onError(Exception e) {
-                    // Keep the demo pet visible if loading fails.
+                    if (pets.getValue() == null || pets.getValue().isEmpty()) {
+                        selectPet(null);
+                    }
                 }
             });
         } catch (IllegalStateException notSignedIn) {
-            // Keep the demo pet visible if no user is signed in.
+            pets.setValue(new ArrayList<>());
+            selectPet(null);
         }
     }
 
@@ -164,9 +214,17 @@ public class DashboardViewModel extends ViewModel {
     // Actions
 
     /** Switches the active pet. */
-    public void selectPet(@NonNull Pet pet) {
+    public void selectPet(@Nullable Pet pet) {
+        if (pet == null) {
+            selectedPet.setValue(null);
+            petName.setValue("");
+            petBreedAge.setValue("");
+            resetActivityMetricsToEmpty();
+            return;
+        }
+
         selectedPet.setValue(pet);
-        petName.setValue(pet.getName());
+        petName.setValue(pet.getName() != null ? pet.getName() : "");
         petBreedAge.setValue(pet.breedAgeLine());
         petIsMale.setValue(pet.isMale());
         healthInsight.setValue(defaultInsight(pet.getName()));
@@ -174,40 +232,26 @@ public class DashboardViewModel extends ViewModel {
         // Fetch the latest activity data for this specific pet
         if (pet.getId() != null) {
             fetchLatestActivityRecord(pet.getId());
+        } else {
+            resetActivityMetricsToEmpty();
         }
     }
 
     /**
      * Finds the pet with the given ID in the current list and selects it.
-     * Called from MainActivity.onResume() after returning from PetProfileActivity
-     * via FLAG_ACTIVITY_REORDER_TO_FRONT (so onCreate doesn't re-run).
      */
     public void selectPetById(@NonNull String petId) {
         List<Pet> current = pets.getValue();
-        if (current == null) return;
-        for (Pet p : current) {
-            if (petId.equals(p.getId())) {
-                selectPet(p);
-                return;
+        if (current != null) {
+            for (Pet p : current) {
+                if (petId.equals(p.getId())) {
+                    selectPet(p);
+                    return;
+                }
             }
         }
         // ID not in cached list yet — reload from repository then select
-        petRepository.loadPets(new PetRepository.PetsCallback() {
-            @Override
-            public void onSuccess(List<Pet> loadedPets) {
-                if (loadedPets == null) return;
-                pets.setValue(loadedPets);
-                for (Pet p : loadedPets) {
-                    if (petId.equals(p.getId())) {
-                        selectPet(p);
-                        return;
-                    }
-                }
-            }
-
-            @Override
-            public void onError(Exception e) { /* keep current selection */ }
-        });
+        refreshPetsFromRepository(petId);
     }
 
     private void fetchLatestActivityRecord(String petId) {
@@ -231,27 +275,7 @@ public class DashboardViewModel extends ViewModel {
                             latest.getDate() != null ? Long.valueOf(latest.getDate().getTime()) : null);
                     updateBehaviorBanner(latest);
                 } else {
-                    activityValue.setValue("No data");
-                    sleepValue.setValue("No data");
-                    feedingValue.setValue("No data");
-
-                    // Clear pills for empty state
-                    activityStatus.setValue("No data");
-                    sleepStatus.setValue("No data");
-                    feedingStatus.setValue("No data");
-
-                    sleepSubtitle.setValue("No data yet");
-                    activitySubtitle.setValue("No data yet");
-                    feedingSubtitle.setValue("No data yet");
-
-                    healthScore.setValue(0);
-                    healthStatus.setValue("No data");
-                    healthScoreDelta.setValue(null);
-                    lastUpdatedMillis.setValue(null);
-                    behaviorBannerTime.setValue("");
-                    behaviorBannerText.setValue(NO_BEHAVIOR_TEXT);
-                    healthInsight.setValue("No activity recorded yet for " + currentPetName()
-                            + ". Add a record to see today's insights.");
+                    resetActivityMetricsToEmpty();
                 }
             }
 
@@ -261,7 +285,6 @@ public class DashboardViewModel extends ViewModel {
                 sleepValue.setValue("Error");
                 feedingValue.setValue("Error");
 
-                // Clear pills for error state
                 activityStatus.setValue("Error");
                 sleepStatus.setValue("Error");
                 feedingStatus.setValue("Error");
@@ -281,21 +304,36 @@ public class DashboardViewModel extends ViewModel {
         });
     }
 
+    private void resetActivityMetricsToEmpty() {
+        activityValue.setValue("No data");
+        sleepValue.setValue("No data");
+        feedingValue.setValue("No data");
+
+        activityStatus.setValue("No data");
+        sleepStatus.setValue("No data");
+        feedingStatus.setValue("No data");
+
+        sleepSubtitle.setValue("No data yet");
+        activitySubtitle.setValue("No data yet");
+        feedingSubtitle.setValue("No data yet");
+
+        healthScore.setValue(0);
+        healthStatus.setValue("No data");
+        healthScoreDelta.setValue(null);
+        lastUpdatedMillis.setValue(null);
+        behaviorBannerTime.setValue("");
+        behaviorBannerText.setValue(NO_BEHAVIOR_TEXT);
+        healthInsight.setValue("No activity recorded yet for " + currentPetName()
+                + ". Add a record to see today's insights.");
+    }
+
     /** Saves a new pet, adds it to the list, and selects it. */
     public void addPet(@NonNull Pet pet, @NonNull Runnable onDone) {
         try {
             petRepository.addPet(pet, new PetRepository.SavePetCallback() {
                 @Override
                 public void onSuccess(Pet savedPet) {
-                    List<Pet> current = pets.getValue() != null
-                            ? pets.getValue()
-                            : new ArrayList<>();
-
-                    List<Pet> updated = new ArrayList<>(current);
-                    updated.add(savedPet);
-                    pets.setValue(updated);
-
-                    selectPet(savedPet);
+                    addPetLocallyOnly(savedPet);
                     onDone.run();
                 }
 
@@ -312,15 +350,25 @@ public class DashboardViewModel extends ViewModel {
         }
     }
 
-    private void addPetLocallyOnly(@NonNull Pet pet) {
+    public void addPetLocallyOnly(@NonNull Pet pet) {
         List<Pet> current = pets.getValue() != null
                 ? pets.getValue()
                 : new ArrayList<>();
 
         List<Pet> updated = new ArrayList<>(current);
-        updated.add(pet);
+        boolean found = false;
+        for (int i = 0; i < updated.size(); i++) {
+            Pet p = updated.get(i);
+            if (pet.getId() != null && pet.getId().equals(p.getId())) {
+                updated.set(i, pet);
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            updated.add(pet);
+        }
         pets.setValue(updated);
-
         selectPet(pet);
     }
 
@@ -378,11 +426,6 @@ public class DashboardViewModel extends ViewModel {
     // Derived values
     // ------------------------------------------------------------------------------------------
 
-    /**
-     * Same scoring rules as before (activity 33/15, nutrition 33/15, sleep 34/20/10), now evaluated on the
-     * real sleep value. The old code stripped every non-digit from the double, so 4.5 h became "45" and 0.5 h
-     * became "05"; any sleep >= 0.8 h could therefore score full sleep points.
-     */
     private int computeScore(ActivityRecord record) {
         int score = 0;
 
@@ -487,7 +530,6 @@ public class DashboardViewModel extends ViewModel {
         }
     }
 
-    /** Score change versus the newest record from the previous calendar day, or null if there isn't one. */
     @Nullable
     private Integer deltaFromYesterday(ActivityRecord latest, List<ActivityRecord> records) {
         if (latest.getDate() == null) return null;
@@ -546,7 +588,6 @@ public class DashboardViewModel extends ViewModel {
                 && ca.get(Calendar.DAY_OF_YEAR) == cb.get(Calendar.DAY_OF_YEAR);
     }
 
-    /** True when {@code earlier} falls on the calendar day immediately before {@code later}. */
     private static boolean isDayBefore(Date earlier, Date later) {
         Calendar expected = Calendar.getInstance();
         expected.setTime(later);

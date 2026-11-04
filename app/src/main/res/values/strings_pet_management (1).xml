@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- ADDITIONS ONLY — merge into your existing strings.xml. -->
 <resources>
     <string name="ps_cd_add_pet">Add a new pet</string>
     <string name="ps_cd_pet_selector">Switch pet</string>
@@ -7,14 +6,21 @@
     <string name="ps_add_new_pet_row">+ Add a new pet</string>
 
     <string name="ps_add_pet_title">Add a pet</string>
+    <string name="ps_onboarding_pet_title">Let\'s Meet Your Pet!</string>
+    <string name="ps_onboarding_pet_subtitle">Tell us about your companion so we can personalize their health records, activity tracking, and AI diagnostic insights.</string>
+    <string name="ps_create_pet_profile">Create Pet Profile</string>
     <string name="ps_field_species">Species</string>
     <string name="ps_field_pet_name">Pet name</string>
     <string name="ps_field_age">Age (e.g. 2 years, or 6 months)</string>
-    <string name="ps_field_breed">Breed (optional)</string>
+    <string name="ps_field_breed">Breed</string>
+    <string name="ps_field_gender">Gender</string>
+    <string name="ps_field_weight">Weight (e.g. 24 kg)</string>
     <string name="ps_field_notes">Additional details (optional)</string>
     <string name="ps_error_required">This field is required</string>
     <string name="ps_save_pet">Save pet</string>
     <string name="ps_cd_back">Back</string>
+    <string name="ps_add_photo">Add Photo</string>
+    <string name="ps_change_photo">Change Photo</string>
 
     <string-array name="ps_species_options">
         <item>Dog</item>
@@ -23,5 +29,10 @@
         <item>Rabbit</item>
         <item>Fish</item>
         <item>Other</item>
+    </string-array>
+
+    <string-array name="ps_gender_options">
+        <item>Male</item>
+        <item>Female</item>
     </string-array>
 </resources>

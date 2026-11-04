@@ -1,5 +1,6 @@
 package com.example.pet.ui.insights;
 
+import android.Manifest;
 import android.content.Intent;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -7,10 +8,12 @@ import android.graphics.Paint;
 import android.graphics.Typeface;
 import android.graphics.pdf.PdfDocument;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.text.Layout;
 import android.text.StaticLayout;
 import android.text.TextPaint;
+import android.util.Log;
 import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.Toast;
@@ -19,27 +22,42 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.example.pet.MainActivity;
 import com.example.pet.PetProfileActivity;
 import com.example.pet.R;
 import com.example.pet.data.Pet;
 import com.example.pet.data.PetRepository;
+import com.example.pet.data.Reminder;
+import com.example.pet.data.ReminderRepository;
 import com.example.pet.databinding.ActivityInsightsBinding;
+import com.example.pet.reminder.AddReminderActivity;
+import com.example.pet.reminder.ReminderAdapter;
+import com.example.pet.reminder.ReminderNotificationHelper;
 import com.example.pet.ui.behavior.BehaviorActivity;
 import com.example.pet.ui.health.HealthActivity;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import java.io.OutputStream;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
 public class InsightsActivity extends AppCompatActivity {
 
+    private static final String TAG = "InsightsActivity";
+
     private ActivityInsightsBinding binding;
     private InsightsViewModel viewModel;
     private PetRepository petRepository;
+    private ReminderRepository reminderRepository;
+    private ReminderAdapter reminderAdapter;
+
+    private final List<Reminder> allLoadedReminders = new ArrayList<>();
+    private String activeCategoryFilter = "All";
 
     private String currentPetId = "";
     private String currentPetName = "";
@@ -53,6 +71,22 @@ public class InsightsActivity extends AppCompatActivity {
                 }
             });
 
+    private final ActivityResultLauncher<String> notifPermissionLauncher = registerForActivityResult(
+            new ActivityResultContracts.RequestPermission(),
+            isGranted -> {
+                if (isGranted) {
+                    Toast.makeText(this, "Reminder notifications enabled!", Toast.LENGTH_SHORT).show();
+                }
+            });
+
+    private final ActivityResultLauncher<Intent> addReminderLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                if (result.getResultCode() == RESULT_OK) {
+                    loadReminders();
+                }
+            });
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -62,20 +96,48 @@ public class InsightsActivity extends AppCompatActivity {
 
         viewModel = new ViewModelProvider(this).get(InsightsViewModel.class);
         petRepository = new PetRepository();
+        reminderRepository = new ReminderRepository();
+
+        ReminderNotificationHelper.createNotificationChannel(this);
+        checkNotificationPermission();
 
         extractPetExtras(getIntent());
 
         setupClickListeners();
         setupBottomNavigation();
+        setupRemindersRecyclerView();
+        setupReminderFilterChips();
+        setupReminderButtons();
         observeViewModel();
+
+        checkTargetSection(getIntent());
     }
 
-    // 🔴 FIX 1: Catch new Intents when switching tabs with FLAG_ACTIVITY_REORDER_TO_FRONT
+    // 🔴 Catch new Intents when switching tabs with FLAG_ACTIVITY_REORDER_TO_FRONT
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         setIntent(intent);
         extractPetExtras(intent);
+        checkTargetSection(intent);
+        loadReminders();
+    }
+
+    private void checkTargetSection(Intent intent) {
+        if (intent != null && "reminders".equalsIgnoreCase(intent.getStringExtra("target_section"))) {
+            binding.insightsScroll.post(() -> {
+                int top = binding.sectionPetCareReminders.getTop();
+                binding.insightsScroll.smoothScrollTo(0, top);
+            });
+        }
+    }
+
+    private void checkNotificationPermission() {
+        if (!ReminderNotificationHelper.hasNotificationPermission(this)) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                notifPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS);
+            }
+        }
     }
 
     private void extractPetExtras(Intent intent) {
@@ -89,7 +151,7 @@ public class InsightsActivity extends AppCompatActivity {
         }
     }
 
-    // 🔴 FIX 2: Always fetch data on resume, with auto-fallback to default pet if petId is missing
+    // 🔴 Always fetch data on resume, with auto-fallback to default pet if petId is missing
     @Override
     protected void onResume() {
         super.onResume();
@@ -98,6 +160,7 @@ public class InsightsActivity extends AppCompatActivity {
         } else {
             fetchDefaultPetAndLoad();
         }
+        loadReminders();
     }
 
     private void fetchDefaultPetAndLoad() {
@@ -120,6 +183,238 @@ public class InsightsActivity extends AppCompatActivity {
                 }
             });
         } catch (Exception ignored) {}
+    }
+
+    private void setupRemindersRecyclerView() {
+        reminderAdapter = new ReminderAdapter(new ReminderAdapter.OnReminderActionListener() {
+            @Override
+            public void onItemClick(Reminder reminder) {
+                openEditReminder(reminder);
+            }
+
+            @Override
+            public void onCompleteClick(Reminder reminder) {
+                markReminderCompleted(reminder);
+            }
+
+            @Override
+            public void onSnoozeClick(Reminder reminder) {
+                snoozeReminder(reminder);
+            }
+
+            @Override
+            public void onToggleEnabled(Reminder reminder, boolean isEnabled) {
+                toggleReminderEnabled(reminder, isEnabled);
+            }
+
+            @Override
+            public void onEditClick(Reminder reminder) {
+                openEditReminder(reminder);
+            }
+
+            @Override
+            public void onDeleteClick(Reminder reminder) {
+                confirmDeleteReminder(reminder);
+            }
+        });
+
+        binding.rvReminders.setLayoutManager(new LinearLayoutManager(this));
+        binding.rvReminders.setAdapter(reminderAdapter);
+    }
+
+    private void setupReminderFilterChips() {
+        binding.chipGroupReminderFilter.setOnCheckedStateChangeListener((group, checkedIds) -> {
+            if (checkedIds.isEmpty()) {
+                activeCategoryFilter = "All";
+            } else {
+                int checkedId = checkedIds.get(0);
+                if (checkedId == R.id.chipFilterVaccine) {
+                    activeCategoryFilter = Reminder.TYPE_VACCINATION;
+                } else if (checkedId == R.id.chipFilterCheckup) {
+                    activeCategoryFilter = Reminder.TYPE_CHECKUP;
+                } else if (checkedId == R.id.chipFilterDeworming) {
+                    activeCategoryFilter = Reminder.TYPE_DEWORMING;
+                } else if (checkedId == R.id.chipFilterMedication) {
+                    activeCategoryFilter = Reminder.TYPE_MEDICATION;
+                } else {
+                    activeCategoryFilter = "All";
+                }
+            }
+            applyFilterAndRender();
+        });
+    }
+
+    private void setupReminderButtons() {
+        View.OnClickListener openAddReminder = v -> {
+            Intent intent = new Intent(InsightsActivity.this, AddReminderActivity.class);
+            if (currentPetId != null && !currentPetId.isEmpty()) {
+                intent.putExtra(AddReminderActivity.EXTRA_PET_ID, currentPetId);
+                intent.putExtra(AddReminderActivity.EXTRA_PET_NAME, currentPetName);
+            }
+            addReminderLauncher.launch(intent);
+        };
+
+        binding.btnQuickAddReminder.setOnClickListener(openAddReminder);
+        binding.btnEmptyScheduleReminder.setOnClickListener(openAddReminder);
+        binding.btnAddNewReminder.setOnClickListener(openAddReminder);
+    }
+
+    private void loadReminders() {
+        if (reminderRepository == null) return;
+
+        reminderRepository.loadAllRemindersForUser(new ReminderRepository.RemindersCallback() {
+            @Override
+            public void onSuccess(List<Reminder> reminders) {
+                allLoadedReminders.clear();
+                if (reminders != null) {
+                    allLoadedReminders.addAll(reminders);
+                }
+                updateReminderSummaryMetrics(allLoadedReminders);
+                applyFilterAndRender();
+            }
+
+            @Override
+            public void onError(Exception e) {
+                Log.w(TAG, "Failed loading pet care reminders", e);
+            }
+        });
+    }
+
+    private void updateReminderSummaryMetrics(List<Reminder> reminders) {
+        int upcomingCount = 0;
+        int dueTodayCount = 0;
+        int overdueCount = 0;
+
+        for (Reminder r : reminders) {
+            if (Reminder.STATUS_COMPLETED.equalsIgnoreCase(r.getStatus()) || !r.isEnabled()) {
+                continue;
+            }
+            String currentStatus = r.calculateCurrentStatus();
+            if (Reminder.STATUS_OVERDUE.equalsIgnoreCase(currentStatus)) {
+                overdueCount++;
+            } else if (Reminder.STATUS_DUE_TODAY.equalsIgnoreCase(currentStatus)) {
+                dueTodayCount++;
+            } else {
+                upcomingCount++;
+            }
+        }
+
+        binding.tvStatUpcomingCount.setText(String.valueOf(upcomingCount));
+        binding.tvStatDueTodayCount.setText(String.valueOf(dueTodayCount));
+        binding.tvStatOverdueCount.setText(String.valueOf(overdueCount));
+    }
+
+    private void applyFilterAndRender() {
+        List<Reminder> filtered = new ArrayList<>();
+        for (Reminder r : allLoadedReminders) {
+            if ("All".equalsIgnoreCase(activeCategoryFilter)) {
+                filtered.add(r);
+            } else if (activeCategoryFilter.equalsIgnoreCase(r.getType())) {
+                filtered.add(r);
+            }
+        }
+
+        reminderAdapter.submitList(filtered);
+
+        if (filtered.isEmpty()) {
+            binding.cardEmptyReminders.setVisibility(View.VISIBLE);
+            binding.rvReminders.setVisibility(View.GONE);
+        } else {
+            binding.cardEmptyReminders.setVisibility(View.GONE);
+            binding.rvReminders.setVisibility(View.VISIBLE);
+        }
+    }
+
+    private void openEditReminder(Reminder reminder) {
+        Intent intent = new Intent(InsightsActivity.this, AddReminderActivity.class);
+        intent.putExtra(AddReminderActivity.EXTRA_REMINDER_ID, reminder.getReminderId());
+        intent.putExtra(AddReminderActivity.EXTRA_PET_ID, reminder.getPetId());
+        intent.putExtra(AddReminderActivity.EXTRA_PET_NAME, reminder.getPetName());
+        addReminderLauncher.launch(intent);
+    }
+
+    private void markReminderCompleted(Reminder reminder) {
+        reminderRepository.markCompleted(reminder, new ReminderRepository.SaveReminderCallback() {
+            @Override
+            public void onSuccess(Reminder updated) {
+                ReminderNotificationHelper.cancelAlarm(InsightsActivity.this, updated.getReminderId());
+                if (!Reminder.FREQ_NONE.equalsIgnoreCase(updated.getRepeatFrequency())) {
+                    ReminderNotificationHelper.scheduleAlarm(InsightsActivity.this, updated);
+                    String nextDateStr = new SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
+                            .format(new Date(updated.getScheduledTimestamp()));
+                    Toast.makeText(InsightsActivity.this, "Completed! Next scheduled for " + nextDateStr, Toast.LENGTH_LONG).show();
+                } else {
+                    Toast.makeText(InsightsActivity.this, "Reminder marked as completed!", Toast.LENGTH_SHORT).show();
+                }
+                loadReminders();
+            }
+
+            @Override
+            public void onError(Exception e) {
+                Toast.makeText(InsightsActivity.this, "Failed to complete: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void snoozeReminder(Reminder reminder) {
+        long oneHourMillis = 60 * 60 * 1000L;
+        reminderRepository.snoozeReminder(reminder, oneHourMillis, new ReminderRepository.SaveReminderCallback() {
+            @Override
+            public void onSuccess(Reminder updated) {
+                ReminderNotificationHelper.scheduleAlarm(InsightsActivity.this, updated);
+                Toast.makeText(InsightsActivity.this, "Snoozed for 1 hour", Toast.LENGTH_SHORT).show();
+                loadReminders();
+            }
+
+            @Override
+            public void onError(Exception e) {
+                Toast.makeText(InsightsActivity.this, "Failed to snooze: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void toggleReminderEnabled(Reminder reminder, boolean isEnabled) {
+        reminderRepository.toggleEnabled(reminder, isEnabled, new ReminderRepository.SaveReminderCallback() {
+            @Override
+            public void onSuccess(Reminder updated) {
+                if (isEnabled) {
+                    ReminderNotificationHelper.scheduleAlarm(InsightsActivity.this, updated);
+                    Toast.makeText(InsightsActivity.this, "Reminder activated", Toast.LENGTH_SHORT).show();
+                } else {
+                    ReminderNotificationHelper.cancelAlarm(InsightsActivity.this, updated.getReminderId());
+                    Toast.makeText(InsightsActivity.this, "Reminder paused", Toast.LENGTH_SHORT).show();
+                }
+                loadReminders();
+            }
+
+            @Override
+            public void onError(Exception e) {
+                Toast.makeText(InsightsActivity.this, "Error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void confirmDeleteReminder(Reminder reminder) {
+        new MaterialAlertDialogBuilder(this)
+                .setTitle("Delete Reminder")
+                .setMessage("Are you sure you want to delete \"" + reminder.getTitle() + "\"?")
+                .setPositiveButton("Delete", (dialog, which) -> {
+                    reminderRepository.deleteReminder(reminder.getPetId(), reminder.getReminderId(), new ReminderRepository.DeleteCallback() {
+                        @Override
+                        public void onSuccess() {
+                            ReminderNotificationHelper.cancelAlarm(InsightsActivity.this, reminder.getReminderId());
+                            Toast.makeText(InsightsActivity.this, "Reminder deleted", Toast.LENGTH_SHORT).show();
+                            loadReminders();
+                        }
+
+                        @Override
+                        public void onError(Exception e) {
+                            Toast.makeText(InsightsActivity.this, "Delete failed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
     }
 
     private void setupClickListeners() {

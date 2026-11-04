@@ -3,6 +3,7 @@ package com.example.pet.lab;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Rect;
 import android.graphics.pdf.PdfRenderer;
 import android.net.Uri;
 import android.os.Handler;
@@ -23,6 +24,9 @@ import com.google.mlkit.vision.text.latin.TextRecognizerOptions;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -31,17 +35,19 @@ import java.util.concurrent.Executors;
  * Handles text extraction from veterinary lab documents across all supported formats:
  * PDF (including multi-page documents), JPG, JPEG, and PNG.
  *
- * Utilizes:
- * - Native Android PdfRenderer to rasterize PDF pages.
- * - Google ML Kit On-Device Text Recognition for fast, private, offline OCR.
- * - LabRuleEngine for deterministic parsing and report-range-only classification.
+ * Employs:
+ * 1. Native Android PdfRenderer to rasterize PDF pages at high DPI (3x).
+ * 2. Google ML Kit On-Device Text Recognition.
+ * 3. Spatial Line Reconstruction algorithm to group multi-column tabular data into horizontal rows.
+ * 4. Extraction of document metadata (Lab name, test date, pet demographics, sample quality warnings).
+ * 5. Deterministic LabRuleEngine validation and classification.
  */
 public class LabDocumentParser {
 
     private static final String TAG = "LabDocumentParser";
 
     public interface ParserCallback {
-        void onSuccess(List<LabTestItem> parsedItems, String rawText, int pageCount);
+        void onSuccess(List<LabTestItem> parsedItems, String rawText, int pageCount, LabRuleEngine.ReportMetadata metadata);
         void onError(Exception e);
     }
 
@@ -56,9 +62,7 @@ public class LabDocumentParser {
     }
 
     /**
-     * Parses a laboratory report from a local content Uri or file path.
-     * Automatically differentiates between PDF documents and standard image formats.
-     * Gracefully rejects unsupported formats and flags unreadable documents.
+     * Parses a laboratory report from a local content Uri or file path asynchronously.
      */
     public void parseDocumentAsync(@NonNull Uri uri, @NonNull String mimeType, @NonNull ParserCallback callback) {
         executor.execute(() -> {
@@ -96,9 +100,11 @@ public class LabDocumentParser {
                     throw new Exception("Document could not be clearly read. Please ensure proper lighting and focus, or use manual entry.");
                 }
 
+                LabRuleEngine.ReportMetadata metadata = LabRuleEngine.extractReportMetadata(extractedText);
                 List<LabTestItem> items = LabRuleEngine.parseReportText(extractedText);
                 final int finalPageCount = pageCount;
-                mainHandler.post(() -> callback.onSuccess(items, extractedText, finalPageCount));
+
+                mainHandler.post(() -> callback.onSuccess(items, extractedText, finalPageCount, metadata));
 
             } catch (Exception e) {
                 Log.e(TAG, "Error parsing lab document", e);
@@ -109,7 +115,7 @@ public class LabDocumentParser {
 
     /**
      * Iterates through all pages in a multi-page PDF document, rendering each page
-     * at 2x resolution and performing OCR.
+     * at 3x resolution and performing OCR with spatial row reconstruction.
      */
     private int processPdf(Uri uri, StringBuilder outText) throws Exception {
         File tempPdf = copyUriToTempFile(uri, "temp_report.pdf");
@@ -125,17 +131,20 @@ public class LabDocumentParser {
                 PdfRenderer.Page page = renderer.openPage(i);
                 Bitmap bitmap = null;
                 try {
-                    // Render at 2x scale for crisp OCR recognition of small decimal prints
-                    int width = page.getWidth() * 2;
-                    int height = page.getHeight() * 2;
+                    // Render at 3x scale for crisp OCR recognition of small decimal points and units
+                    int width = Math.min(3000, page.getWidth() * 3);
+                    int height = Math.min(4000, page.getHeight() * 3);
                     bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
                     page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);
 
                     InputImage inputImage = InputImage.fromBitmap(bitmap, 0);
                     Text visionText = Tasks.await(textRecognizer.process(inputImage));
 
-                    if (visionText != null && !visionText.getText().isEmpty()) {
-                        outText.append(visionText.getText()).append("\n");
+                    if (visionText != null) {
+                        String pageText = extractSpatiallyReconstructedText(visionText);
+                        if (!pageText.isEmpty()) {
+                            outText.append(pageText).append("\n");
+                        }
                     }
                 } finally {
                     page.close();
@@ -162,7 +171,6 @@ public class LabDocumentParser {
         try {
             inputImage = InputImage.fromFilePath(context, uri);
         } catch (Exception e) {
-            // Fallback: copy to temporary file and decode scaled bitmap
             File tempImage = copyUriToTempFile(uri, "temp_image.img");
             try {
                 Bitmap bitmap = BitmapFactory.decodeFile(tempImage.getAbsolutePath());
@@ -174,9 +182,89 @@ public class LabDocumentParser {
         }
 
         Text visionText = Tasks.await(textRecognizer.process(inputImage));
-        if (visionText != null && !visionText.getText().isEmpty()) {
-            outText.append(visionText.getText()).append("\n");
+        if (visionText != null) {
+            String pageText = extractSpatiallyReconstructedText(visionText);
+            if (!pageText.isEmpty()) {
+                outText.append(pageText).append("\n");
+            }
         }
+    }
+
+    /**
+     * Reconstructs lines of tabular data by grouping OCR lines and elements according to their
+     * vertical coordinates (Y position), then sorting horizontally (X position).
+     * This prevents tabular columns from being split or scrambled across different OCR blocks.
+     */
+    @NonNull
+    public static String extractSpatiallyReconstructedText(@NonNull Text visionText) {
+        List<Text.Line> allLines = new ArrayList<>();
+        for (Text.TextBlock block : visionText.getTextBlocks()) {
+            allLines.addAll(block.getLines());
+        }
+
+        if (allLines.isEmpty()) {
+            return visionText.getText();
+        }
+
+        // Sort lines primarily by top Y position
+        Collections.sort(allLines, Comparator.comparingInt(l -> {
+            Rect box = l.getBoundingBox();
+            return box != null ? box.top : 0;
+        }));
+
+        // Cluster lines that lie on approximately the same horizontal band
+        List<List<Text.Line>> rowClusters = new ArrayList<>();
+        for (Text.Line line : allLines) {
+            Rect lineBox = line.getBoundingBox();
+            if (lineBox == null) continue;
+
+            int lineCenterY = (lineBox.top + lineBox.bottom) / 2;
+            int lineHeight = Math.max(12, lineBox.height());
+            int threshold = (int) (lineHeight * 0.65);
+
+            boolean addedToCluster = false;
+            for (List<Text.Line> cluster : rowClusters) {
+                Rect firstBox = cluster.get(0).getBoundingBox();
+                if (firstBox != null) {
+                    int clusterCenterY = (firstBox.top + firstBox.bottom) / 2;
+                    if (Math.abs(lineCenterY - clusterCenterY) <= threshold) {
+                        cluster.add(line);
+                        addedToCluster = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!addedToCluster) {
+                List<Text.Line> newCluster = new ArrayList<>();
+                newCluster.add(line);
+                rowClusters.add(newCluster);
+            }
+        }
+
+        // Within each row cluster, sort left-to-right by X coordinate
+        StringBuilder sb = new StringBuilder();
+        for (List<Text.Line> cluster : rowClusters) {
+            Collections.sort(cluster, Comparator.comparingInt(l -> {
+                Rect box = l.getBoundingBox();
+                return box != null ? box.left : 0;
+            }));
+
+            StringBuilder rowBuilder = new StringBuilder();
+            for (Text.Line line : cluster) {
+                String text = line.getText().trim();
+                if (!text.isEmpty()) {
+                    if (rowBuilder.length() > 0) rowBuilder.append("    ");
+                    rowBuilder.append(text);
+                }
+            }
+            if (rowBuilder.length() > 0) {
+                sb.append(rowBuilder.toString()).append("\n");
+            }
+        }
+
+        String reconstructed = sb.toString().trim();
+        return !reconstructed.isEmpty() ? reconstructed : visionText.getText();
     }
 
     private File copyUriToTempFile(Uri uri, String tempFileName) throws Exception {

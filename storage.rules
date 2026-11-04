@@ -25,5 +25,19 @@ service firebase.storage {
       // Allow creating and updating only if within 15 MB and allowed MIME types (PDF, JPG, JPEG, PNG)
       allow create, update: if isOwner(userId) && isValidLabDocument();
     }
+
+    // Community event posters
+    match /event_posters/{posterFile} {
+      // Any authenticated user can view event posters
+      allow read: if request.auth != null;
+
+      // Authenticated users can upload event posters within 10MB
+      allow create, update: if request.auth != null
+        && request.resource.size <= 10 * 1024 * 1024
+        && request.resource.contentType.matches('image/(jpeg|jpg|png|webp)');
+
+      // Allow deletion by authenticated users
+      allow delete: if request.auth != null;
+    }
   }
 }

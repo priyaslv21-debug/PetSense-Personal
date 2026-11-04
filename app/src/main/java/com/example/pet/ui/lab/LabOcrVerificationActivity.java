@@ -15,7 +15,10 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.example.pet.data.LabRecord;
 import com.example.pet.data.LabTestItem;
+import com.example.pet.data.Pet;
+import com.example.pet.data.PetRepository;
 import com.example.pet.databinding.ActivityLabOcrVerificationBinding;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -35,13 +38,19 @@ public class LabOcrVerificationActivity extends AppCompatActivity {
     private LabAnalysisViewModel viewModel;
     private LabOcrEditAdapter adapter;
     private ProgressDialog progressDialog;
+    private final PetRepository petRepository = new PetRepository();
 
     private String petId = "";
     private String petName = "Pet";
     private String species = "Dog";
+    private String breed = "";
+    private String age = "";
+    private String gender = "";
+    private String weight = "";
 
     private final Calendar selectedDate = Calendar.getInstance();
     private final SimpleDateFormat dateFormat = new SimpleDateFormat("MMM d, yyyy", Locale.getDefault());
+    private final List<String> sampleQualityWarnings = new ArrayList<>();
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -58,6 +67,10 @@ public class LabOcrVerificationActivity extends AppCompatActivity {
         extractIntentExtras(getIntent());
         setupViews();
         observeViewModel();
+
+        if (petId == null || petId.trim().isEmpty()) {
+            promptPetSelection();
+        }
     }
 
     private void extractIntentExtras(Intent intent) {
@@ -66,8 +79,12 @@ public class LabOcrVerificationActivity extends AppCompatActivity {
         petId = intent.getStringExtra(LabReportUploadActivity.EXTRA_PET_ID);
         petName = intent.getStringExtra(LabReportUploadActivity.EXTRA_PET_NAME);
         species = intent.getStringExtra(LabReportUploadActivity.EXTRA_PET_SPECIES);
+        breed = intent.getStringExtra(LabReportUploadActivity.EXTRA_PET_BREED);
+        age = intent.getStringExtra(LabReportUploadActivity.EXTRA_PET_AGE);
+        gender = intent.getStringExtra(LabReportUploadActivity.EXTRA_PET_GENDER);
+        weight = intent.getStringExtra(LabReportUploadActivity.EXTRA_PET_WEIGHT);
 
-        viewModel.initPetContext(petId, petName, species);
+        viewModel.initPetContext(petId, petName, species, breed, age, gender, weight);
 
         String uriStr = intent.getStringExtra("fileUri");
         if (uriStr != null) {
@@ -76,6 +93,24 @@ public class LabOcrVerificationActivity extends AppCompatActivity {
                     intent.getStringExtra("fileName"),
                     intent.getStringExtra("fileMime")
             );
+        }
+
+        // Pre-fill extracted laboratory name if detected
+        String detectedLab = intent.getStringExtra("detectedLabName");
+        if (detectedLab != null && !detectedLab.trim().isEmpty()) {
+            binding.etLabProvider.setText(detectedLab);
+        }
+
+        // Pre-fill extracted report date if detected
+        String detectedDate = intent.getStringExtra("detectedReportDate");
+        if (detectedDate != null && !detectedDate.trim().isEmpty()) {
+            binding.etReportDate.setText(detectedDate);
+        }
+
+        // Restore sample quality warnings (Hemolysis, Lipemia, etc.)
+        ArrayList<String> warnings = intent.getStringArrayListExtra("sampleQualityWarnings");
+        if (warnings != null && !warnings.isEmpty()) {
+            sampleQualityWarnings.addAll(warnings);
         }
 
         // Restore extracted items
@@ -90,10 +125,30 @@ public class LabOcrVerificationActivity extends AppCompatActivity {
 
     private void setupViews() {
         binding.btnBack.setOnClickListener(v -> finish());
+        updatePetContextUI();
+
+        // Sample Quality Warnings Card
+        if (!sampleQualityWarnings.isEmpty()) {
+            binding.cardSampleQuality.setVisibility(View.VISIBLE);
+            StringBuilder sb = new StringBuilder();
+            for (String w : sampleQualityWarnings) {
+                if (sb.length() > 0) sb.append("\n");
+                sb.append("• ").append(w);
+            }
+            binding.tvSampleQualityWarnings.setText(sb.toString());
+        } else {
+            binding.cardSampleQuality.setVisibility(View.GONE);
+        }
 
         // Setup Date Picker
-        binding.etReportDate.setText(dateFormat.format(selectedDate.getTime()));
+        if (binding.etReportDate.getText() == null || binding.etReportDate.getText().toString().isEmpty()) {
+            binding.etReportDate.setText(dateFormat.format(selectedDate.getTime()));
+        }
         binding.etReportDate.setOnClickListener(v -> showDatePicker());
+
+        // Setup Pet Switching
+        binding.btnChangePet.setOnClickListener(v -> showPetSelectionDialog());
+        binding.btnSelectPetPrompt.setOnClickListener(v -> showPetSelectionDialog());
 
         // Setup RecyclerView & Adapter
         adapter = new LabOcrEditAdapter(position -> updateEmptyState());
@@ -111,6 +166,12 @@ public class LabOcrVerificationActivity extends AppCompatActivity {
 
         // Confirm & Run Analysis
         binding.btnConfirmAndAnalyze.setOnClickListener(v -> {
+            if (petId == null || petId.trim().isEmpty()) {
+                Toast.makeText(this, "Please select an active pet before proceeding.", Toast.LENGTH_SHORT).show();
+                showPetSelectionDialog();
+                return;
+            }
+
             List<LabTestItem> currentItems = adapter.getItems();
             if (currentItems.isEmpty()) {
                 Toast.makeText(this, "Please add or retain at least one test parameter.", Toast.LENGTH_SHORT).show();
@@ -130,6 +191,86 @@ public class LabOcrVerificationActivity extends AppCompatActivity {
             progressDialog.show();
             viewModel.confirmAndAnalyze(this, labName, selectedDate.getTime(), this::navigateToDetail);
         });
+    }
+
+    private void updatePetContextUI() {
+        if (petId != null && !petId.trim().isEmpty()) {
+            binding.layoutPetContext.setVisibility(View.VISIBLE);
+            binding.layoutNoPetWarning.setVisibility(View.GONE);
+
+            boolean isCat = "Cat".equalsIgnoreCase(species);
+            binding.tvVerifyPetEmoji.setText(isCat ? "🐈" : "🐕");
+            binding.tvVerifyPetName.setText("Patient: " + (petName != null ? petName : "Pet"));
+            String metaStr = (species != null ? species : "Canine") +
+                    (breed != null && !breed.isEmpty() ? " · " + breed : "") +
+                    (age != null && !age.isEmpty() ? " · " + age : "");
+            binding.tvVerifyPetMeta.setText(metaStr);
+        } else {
+            binding.layoutPetContext.setVisibility(View.GONE);
+            binding.layoutNoPetWarning.setVisibility(View.VISIBLE);
+        }
+    }
+
+    private void promptPetSelection() {
+        petRepository.loadPets(new PetRepository.PetsCallback() {
+            @Override
+            public void onSuccess(List<Pet> pets) {
+                if (pets != null && !pets.isEmpty()) {
+                    Pet defaultPet = pets.get(0);
+                    selectPet(defaultPet);
+                } else {
+                    updatePetContextUI();
+                }
+            }
+
+            @Override
+            public void onError(Exception e) {
+                updatePetContextUI();
+            }
+        });
+    }
+
+    private void showPetSelectionDialog() {
+        petRepository.loadPets(new PetRepository.PetsCallback() {
+            @Override
+            public void onSuccess(List<Pet> pets) {
+                if (pets == null || pets.isEmpty()) {
+                    Toast.makeText(LabOcrVerificationActivity.this, "No registered pets found. Please create a pet profile first.", Toast.LENGTH_LONG).show();
+                    return;
+                }
+
+                String[] petNames = new String[pets.size()];
+                for (int i = 0; i < pets.size(); i++) {
+                    Pet p = pets.get(i);
+                    petNames[i] = p.getName() + " (" + p.getSpecies() + (p.getBreed() != null ? " - " + p.getBreed() : "") + ")";
+                }
+
+                new MaterialAlertDialogBuilder(LabOcrVerificationActivity.this)
+                        .setTitle("Select Associated Pet")
+                        .setItems(petNames, (dialog, which) -> selectPet(pets.get(which)))
+                        .setNegativeButton("Cancel", null)
+                        .show();
+            }
+
+            @Override
+            public void onError(Exception e) {
+                Toast.makeText(LabOcrVerificationActivity.this, "Failed to load pets: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void selectPet(Pet pet) {
+        if (pet == null) return;
+        petId = pet.getId();
+        petName = pet.getName();
+        species = pet.getSpecies();
+        breed = pet.getBreed();
+        age = pet.getAge();
+        gender = pet.getGender();
+        weight = pet.getWeight();
+
+        viewModel.initPetContext(petId, petName, species, breed, age, gender, weight);
+        updatePetContextUI();
     }
 
     private void showDatePicker() {

@@ -16,6 +16,8 @@
     <color name="pd_text_primary">#15132B</color>
     <color name="pd_text_secondary">#8A91AA</color>
     <color name="pd_text_muted">#6B7494</color>
+    <color name="pd_text_tertiary">#8A91AA</color>
+    <color name="pd_accent_green">#0E8A5F</color>
 
     <!-- Insight card gradient -->
     <color name="pd_gradient_start">#5B3DC6</color>

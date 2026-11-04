@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="20dp">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Why are you reporting this event?"
+        android:textColor="@color/pd_text_primary"
+        android:textSize="15sp"
+        android:textStyle="bold" />
+
+    <RadioGroup
+        android:id="@+id/rgReportReasons"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp">
+
+        <RadioButton
+            android:id="@+id/rbMedicalClaims"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Misleading veterinary or medical claims"
+            android:checked="true" />
+
+        <RadioButton
+            android:id="@+id/rbScam"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Suspected fraudulent fee / scam" />
+
+        <RadioButton
+            android:id="@+id/rbInappropriate"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Inappropriate or abusive content" />
+
+        <RadioButton
+            android:id="@+id/rbIncorrectInfo"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Incorrect venue, date, or contact info" />
+
+        <RadioButton
+            android:id="@+id/rbOther"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Other safety concerns" />
+    </RadioGroup>
+
+    <EditText
+        android:id="@+id/etReportDetails"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:background="@drawable/bg_input_field"
+        android:hint="Provide optional details for PetSense moderators..."
+        android:padding="12dp"
+        android:textColor="@color/pd_text_primary"
+        android:textColorHint="@color/pd_text_muted"
+        android:textSize="13sp"
+        android:minLines="2"
+        android:gravity="top" />
+
+</LinearLayout>

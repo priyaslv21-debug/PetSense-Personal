@@ -127,17 +127,70 @@
             android:background="@drawable/bg_status_pill"
             android:backgroundTint="#F8F6FD"
             android:orientation="vertical"
-            android:padding="12dp"
+            android:padding="14dp"
             android:visibility="gone">
+
+            <!-- Explanation -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="📖 What this represents:"
+                android:textColor="@color/pd_primary"
+                android:textSize="12sp"
+                android:textStyle="bold" />
 
             <TextView
                 android:id="@+id/tvAiExplanation"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="ALT is an enzyme concentrated in liver cells. Mild elevation can indicate cellular stress, inflammation, or medication side effects."
-                android:textColor="@color/pd_text_secondary"
+                android:layout_marginTop="2dp"
+                android:text="ALT is an enzyme concentrated in liver cells. Mild elevation can indicate cellular stress, inflammation, or medication response."
+                android:textColor="@color/pd_text_primary"
                 android:textSize="13sp"
                 android:lineSpacingExtra="2dp" />
+
+            <!-- Possible Clinical Significance -->
+            <TextView
+                android:id="@+id/lblSignificance"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:text="🔬 Clinical Significance:"
+                android:textColor="#B45309"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvClinicalSignificance"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="Possible hepatocellular stress, toxic response, or secondary hepatic inflammation."
+                android:textColor="@color/pd_text_primary"
+                android:textSize="13sp"
+                android:lineSpacingExtra="2dp" />
+
+            <!-- Recommended Veterinary Follow-up -->
+            <TextView
+                android:id="@+id/lblFollowUp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:text="🩺 Recommended Follow-Up:"
+                android:textColor="@color/pd_primary"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvRecommendedFollowUp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="Re-evaluate liver enzymes in 2-4 weeks; assess current medications and supplements with your vet."
+                android:textColor="@color/pd_text_primary"
+                android:textSize="13sp"
+                android:lineSpacingExtra="2dp" />
+
         </LinearLayout>
 
     </LinearLayout>

@@ -963,6 +963,275 @@
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
+                <!-- ===================== COMMUNITY & EVENTS SECTION ===================== -->
+                <LinearLayout
+                    android:id="@+id/sectionCommunityEvents"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:layout_marginTop="24dp">
+
+                    <!-- Header Row -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="12dp">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Community &amp; Events"
+                            android:textColor="@color/pd_text_primary"
+                            android:textSize="18sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/btnHomeViewAllEvents"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="View All &gt;"
+                            android:textColor="@color/pd_primary"
+                            android:textSize="13sp"
+                            android:textStyle="bold"
+                            android:padding="6dp" />
+                    </LinearLayout>
+
+                    <!-- Introductory Banner Card -->
+                    <com.google.android.material.card.MaterialCardView
+                        android:id="@+id/cardHomeCommunityBanner"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        app:cardCornerRadius="20dp"
+                        app:cardElevation="0dp"
+                        app:strokeWidth="1dp"
+                        app:strokeColor="@color/pd_lavender_stroke"
+                        app:cardBackgroundColor="@color/pd_lavender">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:padding="16dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Connect with Pet Lovers &amp; Local Events"
+                                android:textColor="@color/pd_primary"
+                                android:textSize="16sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:text="Discover vaccination camps, adoption drives, and pet meetups near you, or host your own community event!"
+                                android:textColor="@color/pd_text_secondary"
+                                android:textSize="12sp"
+                                android:lineSpacingExtra="2dp" />
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal"
+                                android:layout_marginTop="14dp">
+
+                                <com.google.android.material.button.MaterialButton
+                                    android:id="@+id/btnHomeCreateEvent"
+                                    style="@style/Widget.Material3.Button"
+                                    android:layout_width="0dp"
+                                    android:layout_height="40dp"
+                                    android:layout_weight="1"
+                                    android:layout_marginEnd="6dp"
+                                    android:insetTop="0dp"
+                                    android:insetBottom="0dp"
+                                    android:text="+ Create Event"
+                                    android:textColor="@color/white"
+                                    android:textSize="12sp"
+                                    android:textStyle="bold"
+                                    app:backgroundTint="@color/pd_primary"
+                                    app:cornerRadius="12dp" />
+
+                                <com.google.android.material.button.MaterialButton
+                                    android:id="@+id/btnHomeMyEvents"
+                                    style="@style/Widget.Material3.Button.OutlinedButton"
+                                    android:layout_width="0dp"
+                                    android:layout_height="40dp"
+                                    android:layout_weight="1"
+                                    android:layout_marginStart="6dp"
+                                    android:insetTop="0dp"
+                                    android:insetBottom="0dp"
+                                    android:text="My Events"
+                                    android:textColor="@color/pd_primary"
+                                    android:textSize="12sp"
+                                    android:textStyle="bold"
+                                    app:strokeColor="@color/pd_primary"
+                                    app:strokeWidth="1dp"
+                                    app:cornerRadius="12dp" />
+                            </LinearLayout>
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <!-- Category Shortcuts -->
+                    <HorizontalScrollView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="14dp"
+                        android:scrollbars="none"
+                        android:clipToPadding="false">
+
+                        <com.google.android.material.chip.ChipGroup
+                            android:id="@+id/chipGroupHomeCategories"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            app:singleLine="true">
+
+                            <com.google.android.material.chip.Chip
+                                android:id="@+id/chipHomeVaccination"
+                                style="@style/Widget.MaterialComponents.Chip.Action"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Vaccination Camps"
+                                android:textColor="@color/pd_text_primary"
+                                android:textSize="12sp"
+                                app:chipBackgroundColor="@color/white"
+                                app:chipStrokeColor="@color/pd_card_stroke"
+                                app:chipStrokeWidth="1dp"
+                                app:chipCornerRadius="16dp" />
+
+                            <com.google.android.material.chip.Chip
+                                android:id="@+id/chipHomeMeetups"
+                                style="@style/Widget.MaterialComponents.Chip.Action"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Pet Meetups"
+                                android:textColor="@color/pd_text_primary"
+                                android:textSize="12sp"
+                                app:chipBackgroundColor="@color/white"
+                                app:chipStrokeColor="@color/pd_card_stroke"
+                                app:chipStrokeWidth="1dp"
+                                app:chipCornerRadius="16dp" />
+
+                            <com.google.android.material.chip.Chip
+                                android:id="@+id/chipHomeWorkshops"
+                                style="@style/Widget.MaterialComponents.Chip.Action"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Workshops"
+                                android:textColor="@color/pd_text_primary"
+                                android:textSize="12sp"
+                                app:chipBackgroundColor="@color/white"
+                                app:chipStrokeColor="@color/pd_card_stroke"
+                                app:chipStrokeWidth="1dp"
+                                app:chipCornerRadius="16dp" />
+
+                            <com.google.android.material.chip.Chip
+                                android:id="@+id/chipHomeHealth"
+                                style="@style/Widget.MaterialComponents.Chip.Action"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Health Camps"
+                                android:textColor="@color/pd_text_primary"
+                                android:textSize="12sp"
+                                app:chipBackgroundColor="@color/white"
+                                app:chipStrokeColor="@color/pd_card_stroke"
+                                app:chipStrokeWidth="1dp"
+                                app:chipCornerRadius="16dp" />
+
+                            <com.google.android.material.chip.Chip
+                                android:id="@+id/chipHomeAdoption"
+                                style="@style/Widget.MaterialComponents.Chip.Action"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Pet Adoption"
+                                android:textColor="@color/pd_text_primary"
+                                android:textSize="12sp"
+                                app:chipBackgroundColor="@color/white"
+                                app:chipStrokeColor="@color/pd_card_stroke"
+                                app:chipStrokeWidth="1dp"
+                                app:chipCornerRadius="16dp" />
+
+                            <com.google.android.material.chip.Chip
+                                android:id="@+id/chipHomeAwareness"
+                                style="@style/Widget.MaterialComponents.Chip.Action"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Awareness"
+                                android:textColor="@color/pd_text_primary"
+                                android:textSize="12sp"
+                                app:chipBackgroundColor="@color/white"
+                                app:chipStrokeColor="@color/pd_card_stroke"
+                                app:chipStrokeWidth="1dp"
+                                app:chipCornerRadius="16dp" />
+                        </com.google.android.material.chip.ChipGroup>
+                    </HorizontalScrollView>
+
+                    <!-- Upcoming Events Carousel -->
+                    <FrameLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp">
+
+                        <androidx.recyclerview.widget.RecyclerView
+                            android:id="@+id/rvHomeUpcomingEvents"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:clipToPadding="false"
+                            android:overScrollMode="never"
+                            tools:listitem="@layout/item_event_card_compact" />
+
+                        <!-- Empty State Card if no upcoming events -->
+                        <com.google.android.material.card.MaterialCardView
+                            android:id="@+id/layoutHomeEventsEmpty"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            app:cardCornerRadius="16dp"
+                            app:cardElevation="0dp"
+                            app:strokeWidth="1dp"
+                            app:strokeColor="@color/pd_card_stroke"
+                            app:cardBackgroundColor="@color/white"
+                            android:visibility="gone">
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:gravity="center"
+                                android:orientation="vertical"
+                                android:padding="20dp">
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="No upcoming events scheduled"
+                                    android:textColor="@color/pd_text_primary"
+                                    android:textSize="14sp"
+                                    android:textStyle="bold" />
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="4dp"
+                                    android:text="Be the first in your community to host a pet meetup or clinic!"
+                                    android:textColor="@color/pd_text_secondary"
+                                    android:textSize="12sp" />
+                            </LinearLayout>
+                        </com.google.android.material.card.MaterialCardView>
+
+                        <!-- Carousel Loading Spinner -->
+                        <ProgressBar
+                            android:id="@+id/pbHomeEventsLoading"
+                            android:layout_width="32dp"
+                            android:layout_height="32dp"
+                            android:layout_gravity="center"
+                            android:indeterminateTint="@color/pd_primary"
+                            android:visibility="gone" />
+                    </FrameLayout>
+                </LinearLayout>
+
             </LinearLayout>
         </androidx.core.widget.NestedScrollView>
 
@@ -1003,6 +1272,73 @@
                 android:text="This screen is coming soon."
                 android:textColor="@color/pd_text_muted"
                 android:textSize="14sp" />
+        </LinearLayout>
+        <!-- ===================== EMPTY PET STATE ===================== -->
+        <LinearLayout
+            android:id="@+id/emptyPetContainer"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:padding="32dp"
+            android:visibility="gone">
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="96dp"
+                android:layout_height="96dp"
+                app:cardCornerRadius="48dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="@color/pd_lavender_stroke"
+                app:cardBackgroundColor="@color/pd_lavender">
+
+                <ImageView
+                    android:id="@+id/ivEmptyPetIcon"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:scaleType="centerInside"
+                    android:padding="24dp"
+                    android:src="@drawable/ic_ps_paw"
+                    app:tint="@color/pd_primary" />
+            </com.google.android.material.card.MaterialCardView>
+
+            <TextView
+                android:id="@+id/tvEmptyPetTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:text="No Pet Profiles Found"
+                android:textColor="@color/pd_text_primary"
+                android:textSize="20sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvEmptyPetSubtitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:gravity="center"
+                android:maxWidth="280dp"
+                android:text="Register your first pet to start tracking health records, daily activities, and AI diagnostics."
+                android:textColor="@color/pd_text_muted"
+                android:textSize="14sp"
+                android:lineSpacingExtra="3dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnEmptyAddPet"
+                android:layout_width="wrap_content"
+                android:layout_height="48dp"
+                android:layout_marginTop="28dp"
+                android:paddingStart="28dp"
+                android:paddingEnd="28dp"
+                android:text="@string/pd_add_pet"
+                android:textColor="@android:color/white"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                app:backgroundTint="@color/pd_primary"
+                app:cornerRadius="24dp"
+                app:icon="@drawable/ic_ps_add"
+                app:iconTint="@android:color/white" />
         </LinearLayout>
     </FrameLayout>
 
