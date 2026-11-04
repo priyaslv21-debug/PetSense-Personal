@@ -31,6 +31,8 @@ import com.example.pet.ui.health.HealthActivity;
 import com.example.pet.ui.insights.InsightsActivity;
 import com.example.pet.ui.pets.AddPetActivity;
 import com.example.pet.ui.pets.PetSelectorBottomSheet;
+import android.widget.PopupMenu;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 /**
  * Hosts the PetSense dashboard.
@@ -206,14 +208,42 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        binding.btnViewCareSchedule.setOnClickListener(v ->
-                Toast.makeText(this, "TODO: open Care Schedule screen",
-                        Toast.LENGTH_SHORT).show());
+        binding.btnViewCareSchedule.setOnClickListener(v -> {
+            Pet selected = viewModel.getSelectedPet().getValue();
+            Intent labIntent = new Intent(this, com.example.pet.ui.lab.LabHistoryActivity.class);
+            if (selected != null) {
+                labIntent.putExtra(com.example.pet.ui.lab.LabHistoryActivity.EXTRA_PET_ID, selected.getId());
+                labIntent.putExtra(com.example.pet.ui.lab.LabHistoryActivity.EXTRA_PET_NAME, selected.getName());
+                labIntent.putExtra(com.example.pet.ui.lab.LabHistoryActivity.EXTRA_PET_SPECIES, selected.getSpecies());
+            }
+            startActivity(labIntent);
+        });
 
-        // Hidden in the redesign (the reference has no menu icon); listener kept so wiring is unchanged.
-        binding.btnMenu.setOnClickListener(v ->
-                Toast.makeText(this, "TODO: open navigation drawer / menu",
-                        Toast.LENGTH_SHORT).show());
+        // Menu button -> provides Log Out option
+        binding.btnMenu.setOnClickListener(v -> {
+            PopupMenu popup = new PopupMenu(this, v);
+            popup.getMenu().add(0, 1, 0, "Log Out");
+            popup.setOnMenuItemClickListener(item -> {
+                if (item.getItemId() == 1) {
+                    new MaterialAlertDialogBuilder(this)
+                            .setTitle("Log Out")
+                            .setMessage("Are you sure you want to log out of PetSense?")
+                            .setPositiveButton("Log Out", (dialog, which) -> {
+                                AuthRepository authRepo = new AuthRepository();
+                                authRepo.logout();
+                                Intent intent = new Intent(this, LoginActivity.class);
+                                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                                startActivity(intent);
+                                finish();
+                            })
+                            .setNegativeButton("Cancel", null)
+                            .show();
+                    return true;
+                }
+                return false;
+            });
+            popup.show();
+        });
     }
 
     private final ActivityResultLauncher<Intent> petProfileLauncher =
@@ -433,5 +463,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 }
+
 
 

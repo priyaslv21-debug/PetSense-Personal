@@ -1,16 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
-    <uses-feature android:name="android.hardware.camera.any" />
-    <uses-permission android:name="android.permission.CAMERA" />
-    <uses-permission android:name="android.permission.INTERNET" />
 
-    <queries>
-        <package android:name="com.google.android.gms" />
-    </queries>
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="false" />
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
 
     <application
-        android:usesCleartextTraffic="true"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -18,13 +20,7 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.Pet"
-        tools:targetApi="31">
-
-        <meta-data
-            android:name="com.google.android.gms.version"
-            android:value="@integer/google_play_services_version" />
-
+        android:theme="@style/Theme.Pet">
         <activity
             android:name=".LoginActivity"
             android:exported="true">
@@ -34,6 +30,9 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity
+            android:name=".RegisterActivity"
+            android:exported="false" />
         <activity
             android:name=".MainActivity"
             android:exported="false" />
@@ -55,6 +54,31 @@
         <activity
             android:name=".ui.insights.AddActivityRecordActivity"
             android:exported="false" />
+
+        <!-- Pet Lab Report Analysis Activities -->
+        <activity
+            android:name=".ui.lab.LabReportUploadActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ui.lab.LabOcrVerificationActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ui.lab.LabReportDetailActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ui.lab.LabHistoryActivity"
+            android:exported="false" />
+
+        <!-- Secure FileProvider for sharing app-private lab reports with viewers -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
 
     </application>
 
