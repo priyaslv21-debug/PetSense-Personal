@@ -2,6 +2,8 @@ package com.example.pet.data;
 
 import androidx.annotation.Nullable;
 
+import com.google.firebase.firestore.Exclude;
+
 import java.io.Serializable;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -285,14 +287,16 @@ public class Event implements Serializable {
         this.updatedAt = updatedAt;
     }
 
-    // Helper business logic methods
+    // Helper business logic methods (Excluded from Firestore document serialization)
 
+    @Exclude
     public boolean isFree() {
         if (eventFee == null) return true;
         String f = eventFee.trim().toLowerCase(Locale.ROOT);
         return f.isEmpty() || f.equals("free") || f.equals("0") || f.equals("0.00") || f.equals("$0") || f.equals("$0.00");
     }
 
+    @Exclude
     public boolean isOrganizerVerified() {
         return isVerifiedOrganizer();
     }
@@ -301,37 +305,45 @@ public class Event implements Serializable {
         this.organizerVerificationStatus = verified ? VERIFY_ORGANIZER : VERIFY_UNVERIFIED;
     }
 
+    @Exclude
     public boolean isFull() {
         return maximumParticipants > 0 && registrationCount >= maximumParticipants;
     }
 
+    @Exclude
     public boolean isPastDeadline() {
         return registrationDeadline != null && registrationDeadline > 0 && System.currentTimeMillis() > registrationDeadline;
     }
 
+    @Exclude
     public boolean isPastEvent() {
         return eventDate != null && eventDate > 0 && System.currentTimeMillis() > eventDate;
     }
 
+    @Exclude
     public boolean isRegistrationOpen() {
         return STATUS_ACTIVE.equalsIgnoreCase(eventStatus) && !isFull() && !isPastDeadline() && !isPastEvent();
     }
 
+    @Exclude
     public int getAvailableSeats() {
         if (maximumParticipants <= 0) return Integer.MAX_VALUE; // Unlimited
         return Math.max(0, maximumParticipants - registrationCount);
     }
 
+    @Exclude
     public boolean isVerifiedOrganizer() {
         return organizerVerificationStatus != null && !VERIFY_UNVERIFIED.equalsIgnoreCase(organizerVerificationStatus);
     }
 
+    @Exclude
     public boolean isMedicalOrVaccineEvent() {
         if (category == null) return false;
         String c = category.toLowerCase(Locale.ROOT);
         return c.contains("vaccin") || c.contains("health") || c.contains("check-up") || c.contains("medical");
     }
 
+    @Exclude
     @Nullable
     public String getFormattedDate() {
         if (eventDate == null || eventDate <= 0) return null;
@@ -339,6 +351,7 @@ public class Event implements Serializable {
         return sdf.format(new Date(eventDate));
     }
 
+    @Exclude
     @Nullable
     public String getFormattedDeadline() {
         if (registrationDeadline == null || registrationDeadline <= 0) return null;

@@ -18,6 +18,7 @@ import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.SetOptions;
 import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageMetadata;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
 
@@ -534,7 +535,11 @@ public class EventRepository {
                         .child("event_posters")
                         .child(eventId + ".jpg");
 
-                posterRef.putBytes(compressedBytes)
+                StorageMetadata metadata = new StorageMetadata.Builder()
+                        .setContentType("image/jpeg")
+                        .build();
+
+                posterRef.putBytes(compressedBytes, metadata)
                         .addOnSuccessListener(taskSnapshot -> posterRef.getDownloadUrl()
                                 .addOnSuccessListener(uri -> callback.onSuccess(uri.toString()))
                                 .addOnFailureListener(e -> {

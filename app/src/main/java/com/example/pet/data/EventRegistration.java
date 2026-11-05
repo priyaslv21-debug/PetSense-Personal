@@ -2,6 +2,8 @@ package com.example.pet.data;
 
 import androidx.annotation.Nullable;
 
+import com.google.firebase.firestore.Exclude;
+
 import java.io.Serializable;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -215,6 +217,7 @@ public class EventRegistration implements Serializable {
         this.eventFee = eventFee;
     }
 
+    @Exclude
     @Nullable
     public String getFormattedEventDate() {
         if (eventDate == null || eventDate <= 0) return null;
@@ -222,6 +225,7 @@ public class EventRegistration implements Serializable {
         return sdf.format(new Date(eventDate));
     }
 
+    @Exclude
     @Nullable
     public String getFormattedRegistrationTime() {
         if (registeredAt == null || registeredAt <= 0) return null;
