@@ -1,42 +1,25 @@
 rules_version = '2';
 
 // Cloud Storage Security Rules for PetSense (petsense-personal)
-// Enforces strict per-user UID isolation, file-type filtering, and size quotas.
 service firebase.storage {
   match /b/{bucket}/o {
 
-    // Verify if the caller is the authenticated owner of the folder
     function isOwner(userId) {
       return request.auth != null && request.auth.uid == userId;
     }
 
-    // Verify file size limit (15 MB) and allowed document MIME types
-    function isValidLabDocument() {
-      return request.resource.size <= 15 * 1024 * 1024
-        && request.resource.contentType.matches('application/pdf|image/(jpeg|jpg|png)');
-    }
-
-    // Isolated user directory
-    // Actual PetSense path: users/{userId}/pets/{petId}/lab_records/{recordId}/{fileName}
+    // Isolated user directory for lab documents and pet assets
     match /users/{userId}/{allPaths=**} {
-      // Allow reading and deleting own files (delete does not evaluate request.resource)
       allow read, delete: if isOwner(userId);
-
-      // Allow creating and updating only if within 15 MB and allowed MIME types (PDF, JPG, JPEG, PNG)
-      allow create, update: if isOwner(userId) && isValidLabDocument();
+      allow create, update: if isOwner(userId)
+        && request.resource.size <= 15 * 1024 * 1024;
     }
 
     // Community event posters
     match /event_posters/{posterFile} {
-      // Any authenticated user can view event posters
       allow read: if request.auth != null;
-
-      // Authenticated users can upload event posters within 10MB
       allow create, update: if request.auth != null
-        && request.resource.size <= 10 * 1024 * 1024
-        && request.resource.contentType.matches('image/(jpeg|jpg|png|webp)');
-
-      // Allow deletion by authenticated users
+        && request.resource.size <= 10 * 1024 * 1024;
       allow delete: if request.auth != null;
     }
   }

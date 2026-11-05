@@ -1,105 +1,31 @@
 rules_version = '2';
 
 // ===============================================================
-// Assumed Data Model
+// PetSense Security Rules for Cloud Firestore (petsense-personal)
 // ===============================================================
 //
-// 1. Collection: users/{userId}
-//    Document ID: Firebase Auth UID
-//    Fields: User profile fields (PII protected)
-//    Subcollections (recursive):
-//      - pets/{petId}
-//      - pets/{petId}/reminders/{reminderId}
-//      - pets/{petId}/activityRecords/{recordId}
-//      - pets/{petId}/lab_records/{recordId}
-//      - pets/{petId}/behavior_history/{historyId}
-//      - behavior_history/{historyId}
-//      - registered_events/{eventId}
-//    Access: Restricted strictly to the authenticated document owner (request.auth.uid == userId).
+// 1. users/{userId} (and all subcollections: pets, reminders, lab_records, registered_events, etc.)
+//    - Private owner-only access: request.auth.uid == userId
 //
-// 2. Collection: events/{eventId}
-//    Document ID: Unique event ID (matches eventId field)
-//    Fields:
-//      - organizerId: string (required, immutable, 1-128 chars) - Auth UID of the creator
-//      - title: string (required, 1-150 chars) - Event title
-//      - eventId: string (optional, nullable, max 128 chars) - Event identifier
-//      - description: string (optional, nullable, max 5000 chars) - Detailed description
-//      - category: string (optional, nullable, max 100 chars) - Event category
-//      - imageUrl: string (optional, nullable, max 2000 chars) - Storage URL or image link
-//      - organizerName: string (optional, nullable, max 100 chars) - Creator display name
-//      - organizerContact: string (optional, nullable, max 100 chars) - Contact email or phone
-//      - organizerVerificationStatus: string (optional, nullable, max 50 chars) - Verification status
-//      - venue: string (optional, nullable, max 200 chars) - Venue name
-//      - address: string (optional, nullable, max 300 chars) - Street address
-//      - city: string (optional, nullable, max 100 chars) - City name
-//      - eventFee: string (optional, nullable, max 50 chars) - "Free" or fee amount
-//      - eventStatus: string (optional, nullable, max 50 chars) - "ACTIVE", "CANCELLED", "COMPLETED"
-//      - startTime: string (optional, nullable, max 50 chars) - Start time (e.g., "10:00 AM")
-//      - endTime: string (optional, nullable, max 50 chars) - End time (e.g., "01:00 PM")
-//      - registrationCount: number (optional, nullable, >= 0) - Currently registered attendee count
-//      - maximumParticipants: number (optional, nullable, >= 0) - Capacity limit (0 for unlimited)
-//      - eventDate: number (optional, nullable, epoch ms >= 0) - Event date timestamp
-//      - registrationDeadline: number (optional, nullable, epoch ms >= 0) - Registration deadline timestamp
-//      - createdAt: number (optional, nullable, epoch ms >= 0, immutable) - Creation timestamp
-//      - updatedAt: number (optional, nullable, epoch ms >= 0) - Last update timestamp
-//    Access:
-//      - Read: Any authenticated user can discover events.
-//      - Create: Authenticated user where organizerId == request.auth.uid.
-//      - Update: Organizer can update details (organizerId, eventId, and createdAt are immutable);
-//                attendees can update registrationCount (and optional updatedAt) via transactions
-//                with strict atomic bounds (change <= 1, non-negative).
-//      - Delete: Only the event organizer.
+// 2. events/{eventId}
+//    - Read: Authenticated users can discover events
+//    - Create: Authenticated users setting themselves as organizer
+//    - Update: Organizer can edit details (organizerId is immutable); attendees can update registrationCount in transaction
+//    - Delete: Only the organizer can delete their event
 //
-// 3. Subcollection: events/{eventId}/registrations/{userId}
-//    Document ID: Firebase Auth UID of the registered participant
-//    Fields:
-//      - userId: string (optional/required, immutable, 1-128 chars) - Registrant's Auth UID
-//      - registrationId: string (optional, nullable, max 128 chars) - Registration ID
-//      - eventId: string (optional, nullable, max 128 chars, immutable) - Event ID
-//      - participantName: string (optional, nullable, max 150 chars) - Registrant's name
-//      - email: string (optional, nullable, max 150 chars) - Registrant's email
-//      - phone: string (optional, nullable, max 50 chars) - Contact phone number
-//      - petId: string (optional, nullable, max 128 chars) - Associated pet ID
-//      - petName: string (optional, nullable, max 100 chars) - Pet name
-//      - petSpecies: string (optional, nullable, max 100 chars) - Pet species / breed
-//      - petAge: string (optional, nullable, max 50 chars) - Pet age
-//      - additionalNotes: string (optional, nullable, max 2000 chars) - Extra instructions / notes
-//      - registrationStatus: string (optional, nullable, max 50 chars) - "CONFIRMED" or "CANCELLED"
-//      - eventTitle: string (optional, nullable, max 150 chars) - Denormalized event title
-//      - eventVenue: string (optional, nullable, max 200 chars) - Denormalized event venue
-//      - eventCity: string (optional, nullable, max 100 chars) - Denormalized event city
-//      - eventFee: string (optional, nullable, max 50 chars) - Denormalized event fee
-//      - registeredAt: number (optional, nullable, epoch ms >= 0, immutable) - Registration timestamp
-//      - eventDate: number (optional, nullable, epoch ms >= 0) - Event date timestamp
-//    Access:
-//      - Read: Registrant (request.auth.uid == userId) or the parent event organizer.
-//      - Create / Update: Only the registrant (request.auth.uid == userId).
-//      - Delete: Registrant or the parent event organizer.
+// 3. events/{eventId}/registrations/{userId}
+//    - Read: Registrant or the event organizer
+//    - Create/Update: Only the registrant (request.auth.uid == userId)
+//    - Delete: Registrant or the event organizer
 //
-// 4. Collection: event_reports/{reportId}
-//    Document ID: Unique report ID (auto-generated)
-//    Fields:
-//      - reportId: string (optional, nullable, max 128 chars) - Report identifier
-//      - eventId: string (optional, nullable, max 128 chars) - Reported event ID
-//      - eventTitle: string (optional, nullable, max 150 chars) - Title of reported event
-//      - reportedByUserId / reporterId: string (required, 1-128 chars) - Submitter's Auth UID
-//      - reportedByEmail / reporterEmail: string (optional, nullable, max 150 chars) - Submitter's email
-//      - reason: string (optional, nullable, max 200 chars) - Reason for report
-//      - details: string (optional, nullable, max 3000 chars) - Additional details
-//      - status: string (optional, nullable, max 50 chars) - Report status ("PENDING", etc.)
-//      - reportedAt / createdAt: number (optional, nullable, epoch ms >= 0) - Report timestamp
-//    Access:
-//      - Create: Authenticated users where reporterId or reportedByUserId matches request.auth.uid.
-//      - Read / Update / Delete: Denied (backend / moderator only).
+// 4. event_reports/{reportId}
+//    - Create: Authenticated users with reporterId == request.auth.uid
+//    - Read/Update/Delete: Denied for client SDKs (moderation only)
 //
 // ===============================================================
 
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // ===============================================================
-    // Helper Functions
-    // ===============================================================
 
     function isAuthenticated() {
       return request.auth != null;
@@ -112,122 +38,12 @@ service cloud.firestore {
     function isEventOrganizer(eventId) {
       return isAuthenticated() &&
              exists(/databases/$(database)/documents/events/$(eventId)) &&
-             get(/databases/$(database)/documents/events/$(eventId)).data.get('organizerId', '') == request.auth.uid;
-    }
-
-    function hasOnlyAllowedFields(data, allowedKeys) {
-      return data.keys().hasOnly(allowedKeys);
-    }
-
-    function isValidRequiredString(data, field, minLen, maxLen) {
-      let val = data.get(field, null);
-      return val is string && val.size() >= minLen && val.size() <= maxLen;
-    }
-
-    function isValidOptionalString(data, field, minLen, maxLen) {
-      let val = data.get(field, null);
-      return val == null || (val is string && val.size() >= minLen && val.size() <= maxLen);
-    }
-
-    function isValidOptionalNumber(data, field, minVal) {
-      let val = data.get(field, null);
-      return val == null || (val is number && val >= minVal);
-    }
-
-    function isValidOptionalBoolean(data, field) {
-      let val = data.get(field, null);
-      return val == null || val is bool;
+             get(/databases/$(database)/documents/events/$(eventId)).data.organizerId == request.auth.uid;
     }
 
     // ===============================================================
-    // Domain Validators
+    // User Profiles & Private Subcollections
     // ===============================================================
-
-    function isValidEvent(data) {
-      return hasOnlyAllowedFields(data, [
-               'organizerId', 'title', 'eventId', 'description', 'category',
-               'imageUrl', 'organizerName', 'organizerContact', 'organizerVerificationStatus',
-               'venue', 'address', 'city', 'eventFee', 'eventStatus', 'startTime',
-               'endTime', 'registrationCount', 'maximumParticipants', 'eventDate',
-               'registrationDeadline', 'createdAt', 'updatedAt'
-             ]) &&
-             isValidRequiredString(data, 'organizerId', 1, 128) &&
-             isValidRequiredString(data, 'title', 1, 150) &&
-             isValidOptionalString(data, 'eventId', 0, 128) &&
-             isValidOptionalString(data, 'description', 0, 5000) &&
-             isValidOptionalString(data, 'category', 0, 100) &&
-             isValidOptionalString(data, 'imageUrl', 0, 2000) &&
-             isValidOptionalString(data, 'organizerName', 0, 100) &&
-             isValidOptionalString(data, 'organizerContact', 0, 100) &&
-             isValidOptionalString(data, 'organizerVerificationStatus', 0, 50) &&
-             isValidOptionalString(data, 'venue', 0, 200) &&
-             isValidOptionalString(data, 'address', 0, 300) &&
-             isValidOptionalString(data, 'city', 0, 100) &&
-             isValidOptionalString(data, 'eventFee', 0, 50) &&
-             isValidOptionalString(data, 'eventStatus', 0, 50) &&
-             isValidOptionalString(data, 'startTime', 0, 50) &&
-             isValidOptionalString(data, 'endTime', 0, 50) &&
-             isValidOptionalNumber(data, 'registrationCount', 0) &&
-             isValidOptionalNumber(data, 'maximumParticipants', 0) &&
-             isValidOptionalNumber(data, 'eventDate', 0) &&
-             isValidOptionalNumber(data, 'registrationDeadline', 0) &&
-             isValidOptionalNumber(data, 'createdAt', 0) &&
-             isValidOptionalNumber(data, 'updatedAt', 0);
-    }
-
-    function isValidRegistration(data) {
-      return hasOnlyAllowedFields(data, [
-               'registrationId', 'eventId', 'userId', 'participantName',
-               'email', 'phone', 'petId', 'petName', 'petSpecies', 'petAge',
-               'additionalNotes', 'registrationStatus', 'registeredAt',
-               'eventTitle', 'eventDate', 'eventVenue', 'eventCity', 'eventFee'
-             ]) &&
-             isValidOptionalString(data, 'userId', 1, 128) &&
-             isValidOptionalString(data, 'registrationId', 0, 128) &&
-             isValidOptionalString(data, 'eventId', 0, 128) &&
-             isValidOptionalString(data, 'participantName', 0, 150) &&
-             isValidOptionalString(data, 'email', 0, 150) &&
-             isValidOptionalString(data, 'phone', 0, 50) &&
-             isValidOptionalString(data, 'petId', 0, 128) &&
-             isValidOptionalString(data, 'petName', 0, 100) &&
-             isValidOptionalString(data, 'petSpecies', 0, 100) &&
-             isValidOptionalString(data, 'petAge', 0, 50) &&
-             isValidOptionalString(data, 'additionalNotes', 0, 2000) &&
-             isValidOptionalString(data, 'registrationStatus', 0, 50) &&
-             isValidOptionalString(data, 'eventTitle', 0, 150) &&
-             isValidOptionalString(data, 'eventVenue', 0, 200) &&
-             isValidOptionalString(data, 'eventCity', 0, 100) &&
-             isValidOptionalString(data, 'eventFee', 0, 50) &&
-             isValidOptionalNumber(data, 'registeredAt', 0) &&
-             isValidOptionalNumber(data, 'eventDate', 0);
-    }
-
-    function isValidReport(data) {
-      return hasOnlyAllowedFields(data, [
-               'reportId', 'eventId', 'eventTitle', 'reportedByUserId',
-               'reportedByEmail', 'reporterId', 'reporterEmail', 'reason',
-               'details', 'status', 'reportedAt', 'createdAt'
-             ]) &&
-             isValidOptionalString(data, 'reportId', 0, 128) &&
-             isValidOptionalString(data, 'eventId', 0, 128) &&
-             isValidOptionalString(data, 'eventTitle', 0, 150) &&
-             isValidOptionalString(data, 'reportedByUserId', 0, 128) &&
-             isValidOptionalString(data, 'reportedByEmail', 0, 150) &&
-             isValidOptionalString(data, 'reporterId', 0, 128) &&
-             isValidOptionalString(data, 'reporterEmail', 0, 150) &&
-             isValidOptionalString(data, 'reason', 0, 200) &&
-             isValidOptionalString(data, 'details', 0, 3000) &&
-             isValidOptionalString(data, 'status', 0, 50) &&
-             isValidOptionalNumber(data, 'reportedAt', 0) &&
-             isValidOptionalNumber(data, 'createdAt', 0);
-    }
-
-    // ===============================================================
-    // Rules
-    // ===============================================================
-
-    // User profile document and all subcollections
-    // (pets, reminders, activityRecords, behavior_history, lab_records, registered_events, etc.)
     match /users/{userId} {
       allow read, write: if isOwner(userId);
 
@@ -236,31 +52,28 @@ service cloud.firestore {
       }
     }
 
-    // Community & Events feature collections
+    // ===============================================================
+    // Community & Events
+    // ===============================================================
     match /events/{eventId} {
-      // All authenticated users can discover events
+      // Authenticated users can discover events
       allow read: if isAuthenticated();
 
-      // Only authenticated users can create events, setting themselves as the organizer
+      // Authenticated users can create an event; must set themselves as organizer
       allow create: if isAuthenticated() &&
-                    request.resource.data.get('organizerId', '') == request.auth.uid &&
-                    request.resource.data.get('eventId', eventId) == eventId &&
-                    isValidEvent(request.resource.data);
+                    request.resource.data.organizerId == request.auth.uid &&
+                    request.resource.data.title is string &&
+                    request.resource.data.title.size() > 0;
 
       // Event updates:
-      // 1. Organizer can edit event details (organizerId, eventId, and createdAt are immutable)
-      // 2. Authenticated attendees can update registrationCount (and optional updatedAt) via transactions
+      // 1. Organizer can edit their event (organizerId cannot be transferred)
+      // 2. Attendees can update registrationCount (and optional updatedAt) via transactions
       allow update: if isAuthenticated() && (
         (resource.data.organizerId == request.auth.uid &&
-         request.resource.data.organizerId == resource.data.organizerId &&
-         request.resource.data.get('eventId', eventId) == eventId &&
-         (resource.data.get('createdAt', null) == null || request.resource.data.get('createdAt', null) == resource.data.get('createdAt', null)) &&
-         isValidEvent(request.resource.data)) ||
+         request.resource.data.organizerId == resource.data.organizerId) ||
         (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['registrationCount', 'updatedAt']) &&
-         request.resource.data.diff(resource.data).affectedKeys().hasAny(['registrationCount']) &&
-         request.resource.data.get('registrationCount', null) is number &&
-         request.resource.data.registrationCount >= 0 &&
-         math.abs(request.resource.data.registrationCount - resource.data.get('registrationCount', 0)) <= 1)
+         request.resource.data.get('registrationCount', 0) is number &&
+         request.resource.data.registrationCount >= 0)
       );
 
       // Only the event organizer can delete an event
@@ -268,28 +81,17 @@ service cloud.firestore {
 
       // Event registrations subcollection
       match /registrations/{userId} {
-        // Read: registrant themselves or the parent event organizer
+        // Read: Registrant or the event organizer
         allow read: if isAuthenticated() && (
           request.auth.uid == userId ||
           isEventOrganizer(eventId)
         );
 
-        // Create: registrant matching the userId
-        allow create: if isOwner(userId) &&
-                      request.resource.data.get('userId', userId) == userId &&
-                      request.resource.data.get('eventId', eventId) == eventId &&
-                      isValidRegistration(request.resource.data);
+        // Create / Update: Only the registrant can register themselves
+        allow create, update: if isOwner(userId) &&
+                              (!('userId' in request.resource.data) || request.resource.data.userId == userId);
 
-        // Update: registrant matching the userId (userId, eventId, and registeredAt are immutable)
-        allow update: if isOwner(userId) &&
-                      request.resource.data.get('userId', userId) == userId &&
-                      request.resource.data.get('eventId', eventId) == eventId &&
-                      resource.data.get('userId', userId) == request.resource.data.get('userId', userId) &&
-                      resource.data.get('eventId', eventId) == request.resource.data.get('eventId', eventId) &&
-                      (resource.data.get('registeredAt', null) == null || request.resource.data.get('registeredAt', null) == resource.data.get('registeredAt', null)) &&
-                      isValidRegistration(request.resource.data);
-
-        // Delete: registrant or the parent event organizer
+        // Delete: Registrant or the event organizer
         allow delete: if isAuthenticated() && (
           request.auth.uid == userId ||
           isEventOrganizer(eventId)
@@ -297,18 +99,15 @@ service cloud.firestore {
       }
     }
 
-    // Event reports submitted for moderation
+    // ===============================================================
+    // Moderation & Reports
+    // ===============================================================
     match /event_reports/{reportId} {
-      // Authenticated users can submit reports with their auth UID verified
-      allow create: if isAuthenticated() &&
-                    request.resource.data.get('reportId', reportId) == reportId &&
-                    (
-                      request.resource.data.get('reporterId', null) == request.auth.uid ||
-                      request.resource.data.get('reportedByUserId', null) == request.auth.uid
-                    ) &&
-                    isValidReport(request.resource.data);
+      allow create: if isAuthenticated() && (
+        request.resource.data.get('reporterId', '') == request.auth.uid ||
+        request.resource.data.get('reportedByUserId', '') == request.auth.uid
+      );
 
-      // Only backend / moderators can read, update, or delete reports
       allow read, update, delete: if false;
     }
   }
